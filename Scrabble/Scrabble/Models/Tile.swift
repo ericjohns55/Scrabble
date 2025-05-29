@@ -7,8 +7,14 @@
 
 import Foundation
 
-struct Tile: Identifiable, Hashable, Codable {
-    var id = UUID()
+struct BoardPosition: Equatable {
+    var row: Int
+    var col: Int
+}
+
+struct Tile: Identifiable, Equatable {
+    let id = UUID()
     let letter: String
-    let points: Int
+    var boardPosition: BoardPosition? = nil
+    var offset: CGSize = .zero
 }

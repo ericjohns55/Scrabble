@@ -15,27 +15,27 @@ struct TileBreakdown {
 }
 
 class ScrabbleController: ObservableObject {
-    @Published var board: [[BoardSquare]] = []
+//    @Published var board: [[BoardSquare]] = []
     @Published var availableTiles: [Tile] = []
     
     init() {
-        board = Array(repeating: Array(repeating: BoardSquare(), count: 15), count: 15)
-        
-        let cornerTile = Tile(letter: "*", points: 1)
-        board[0][14] = BoardSquare(tile: cornerTile)
-        board[14][0] = BoardSquare(tile: cornerTile)
-        board[14][14] = BoardSquare(tile: cornerTile)
-        board[0][0].modifier = "DL"
-        
-        availableTiles = [
-            Tile(letter: "A", points: 1),
-            Tile(letter: "B", points: 4),
-            Tile(letter: "C", points: 4),
-            Tile(letter: "D", points: 2),
-            Tile(letter: "E", points: 1),
-            Tile(letter: "F", points: 4),
-            Tile(letter: "G", points: 3),
-        ]
+//        board = Array(repeating: Array(repeating: BoardSquare(), count: 15), count: 15)
+//        
+//        let cornerTile = Tile(letter: "*", points: 1)
+//        board[0][14] = BoardSquare(tile: cornerTile)
+//        board[14][0] = BoardSquare(tile: cornerTile)
+//        board[14][14] = BoardSquare(tile: cornerTile)
+//        board[0][0].modifier = "DL"
+//        
+//        availableTiles = [
+//            Tile(letter: "A", points: 1),
+//            Tile(letter: "B", points: 4),
+//            Tile(letter: "C", points: 4),
+//            Tile(letter: "D", points: 2),
+//            Tile(letter: "E", points: 1),
+//            Tile(letter: "F", points: 4),
+//            Tile(letter: "G", points: 3),
+//        ]
         
 //        var tileBag = [
 //            TileBreakdown(letter: "?", count: 2, points: 0),
@@ -74,36 +74,36 @@ class ScrabbleController: ObservableObject {
 //            }
 //        }
     }
-    
-    func placeTile(_ tile: Tile, row: Int, col: Int) -> Bool {
-        guard board[row][col].tile == nil else {
-            print("Cannot place tile here")
-            return false
-        }
-        
-        board[row][col].tile = tile
-        printBoard()
-        
-        print("Placed tile: \(tile.letter) (p\(tile.points))")
-        
-        if let index = availableTiles.firstIndex(of: tile) {
-            availableTiles.remove(at: index)
-            print("Removed from bag")
-            return true
-        }
-        
-        print("Failed to remove from bag")
-        
-        return false
-    }
-    
-    func printBoard() {
-        for i in 0..<15 {
-            for j in 0..<15 {
-                if (board[i][j].tile != nil) {
-                    print(board[i][j].tile?.letter ?? "")
-                }
-            }
-        }
-    }
+//    
+//    func placeTile(_ tile: Tile, row: Int, col: Int) -> Bool {
+//        guard board[row][col].tile == nil else {
+//            print("Cannot place tile here")
+//            return false
+//        }
+//        
+//        board[row][col].tile = tile
+//        printBoard()
+//        
+//        print("Placed tile: \(tile.letter) (p\(tile.points))")
+//        
+//        if let index = availableTiles.firstIndex(of: tile) {
+//            availableTiles.remove(at: index)
+//            print("Removed from bag")
+//            return true
+//        }
+//        
+//        print("Failed to remove from bag")
+//        
+//        return false
+//    }
+//    
+//    func printBoard() {
+//        for i in 0..<15 {
+//            for j in 0..<15 {
+//                if (board[i][j].tile != nil) {
+//                    print(board[i][j].tile?.letter ?? "")
+//                }
+//            }
+//        }
+//    }
 }
