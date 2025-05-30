@@ -8,12 +8,10 @@
 import SwiftUI
 
 struct TileRackView: View {
+    @ObservedObject var dragManager: DragManager
+    
     @Binding var tiles: [Tile]
-    let tileSize: CGFloat
-    let boardFrame: CGRect
     let onTileDrop: (UUID, CGPoint) -> Void
-
-    @State private var globalFrames: [UUID: CGRect] = [:]
 
     var body: some View {
         GeometryReader { geo in
@@ -29,40 +27,30 @@ struct TileRackView: View {
                         TileView(letter: tile.letter, size: adjustedTileSize)
                             .position(rackPosition(for: tile, tileSize: adjustedTileSize, spacing: spacing))
                             .offset(tile.offset)
-                            .background(
-                                GeometryReader { tileGeo in
-                                    Color.clear
-                                        .preference(
-                                            key: TileDropOriginKey.self,
-                                            value: [tile.id: tileGeo.frame(in: .global)]
-                                        )
-                                }
-                            )
                             .gesture(
                                 DragGesture()
                                     .onChanged { value in
                                         tile.offset = value.translation
                                     }
                                     .onEnded { value in
-                                        let frame = globalFrames[tile.id] ?? .zero
+                                        let globalDropPoint = value.locationInViewGlobal(in: geo)
                                         
-                                        let dropPoint = CGPoint(
-                                            x: frame.origin.x + tileSize / 2 + value.translation.width,
-                                            y: frame.origin.y + tileSize / 2 + value.translation.height
+                                        // convert global point into board's coordinate space
+                                        let boardOrigin = dragManager.boardFrame.origin
+                                        let dropPointInBoard = CGPoint(
+                                            x: globalDropPoint.x - boardOrigin.x,
+                                            y: globalDropPoint.y - boardOrigin.y
                                         )
+
                                         tile.offset = .zero
-                                        onTileDrop(tile.id, dropPoint)
+                                        onTileDrop(tile.id, dropPointInBoard)
                                     }
                             )
                             .animation(.easeInOut(duration: 0.2), value: tile.offset)
                     }
                 }
             }
-            .onPreferenceChange(TileDropOriginKey.self) { newFrames in
-                globalFrames.merge(newFrames) { _, new in new }
-            }
         }
-        .frame(height: tileSize + 20)
     }
 
     private func rackPosition(for tile: Tile, tileSize: CGFloat, spacing: CGFloat) -> CGPoint {
@@ -76,11 +64,12 @@ struct TileRackView: View {
     }
 }
 
-// MARK: - PreferenceKey
-private struct TileDropOriginKey: PreferenceKey {
-    static var defaultValue: [UUID: CGRect] = [:]
-    static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
-        value.merge(nextValue()) { _, new in new }
+extension DragGesture.Value {
+    func locationInViewGlobal(in geo: GeometryProxy) -> CGPoint {
+        let viewOrigin = geo.frame(in: .global).origin
+        return CGPoint(
+            x: viewOrigin.x + self.location.x,
+            y: viewOrigin.y + self.location.y
+        )
     }
 }
-

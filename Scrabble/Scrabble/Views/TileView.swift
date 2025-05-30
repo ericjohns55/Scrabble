@@ -20,7 +20,3 @@ struct TileView: View {
             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black))
     }
 }
-
-#Preview {
-    TileView(letter: "A", size: 50)
-}

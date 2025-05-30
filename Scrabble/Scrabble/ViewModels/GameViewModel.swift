@@ -17,22 +17,12 @@ class GameViewModel: ObservableObject {
         tiles = "EXAMPLE".map { Tile(letter: String($0)) }
     }
 
-    func updateTilePosition(_ tileID: UUID, to dropPoint: CGPoint, boardFrame: CGRect) {
+    func updateTilePosition(_ tileID: UUID, to dropPoint: CGPoint, dragManager: DragManager) {
         guard let index = tiles.firstIndex(where: { $0.id == tileID }) else { return }
 
-        let localX = dropPoint.x - boardFrame.minX
-        let localY = dropPoint.y - boardFrame.minY
-
-        let tileSize = boardFrame.width / 15
-        let col = Int(localX / tileSize)
-        let row = Int(localY / tileSize)
-
-        print("DropPoint: \(dropPoint)")
-        print("BoardFrame: \(boardFrame)")
-        print("→ localX: \(dropPoint.x - boardFrame.minX), localY: \(dropPoint.y - boardFrame.minY)")
-        print("Dropped tile at row: \(row), col: \(col)")
-        
-        print("\n\n")
+        let tileSize = dragManager.boardFrame.width / 15
+        let col = Int(dropPoint.x / tileSize)
+        let row = Int(dropPoint.y / tileSize)
 
         if row >= 0, row < 15, col >= 0, col < 15 {
             tiles[index].boardPosition = BoardPosition(row: row, col: col)

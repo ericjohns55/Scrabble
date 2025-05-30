@@ -9,7 +9,7 @@ import SwiftUI
 
 struct BoardView: View {
     @ObservedObject var viewModel: GameViewModel
-    @Binding var boardFrame: CGRect
+    @ObservedObject var dragManager: DragManager
 
     let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 15)
 
@@ -17,24 +17,21 @@ struct BoardView: View {
         GeometryReader { geometry in
             ZStack(alignment: .topLeading) {
                 LazyVGrid(columns: columns, spacing: 0) {
-                    ForEach(0..<15) { _ in
-                        ForEach(0..<15) { _ in
-                            Rectangle()
-                                .stroke(Color.gray.opacity(0.5), lineWidth: 0.5)
-                                .aspectRatio(1, contentMode: .fit)
-                        }
+                    ForEach(0..<(15*15)) { _ in
+                        Rectangle()
+                            .stroke(Color.gray.opacity(0.5), lineWidth: 0.5)
+                            .aspectRatio(1, contentMode: .fit)
                     }
                 }
 
                 ForEach($viewModel.tiles) { $tile in
                     if let position = tile.boardPosition {
-                        let tileSize = boardFrame.width / 15
+                        let tileSize = dragManager.boardFrame.width / 15
 
                         DraggableTile(
-                            tile: $tile,
-                            boardFrame: boardFrame,
+                            dragManager: dragManager,
                             viewModel: viewModel,
-                            tileSize: tileSize
+                            tile: $tile
                         )
                         .frame(width: tileSize, height: tileSize)
                         .position(
@@ -45,10 +42,7 @@ struct BoardView: View {
                 }
             }
             .onAppear {
-                boardFrame = geometry.frame(in: .named("gameSpace"))
-            }
-            .onChange(of: geometry.size) { _, _ in
-                boardFrame = geometry.frame(in: .named("gameSpace"))
+                dragManager.boardFrame = geometry.frame(in: .global)
             }
         }
     }

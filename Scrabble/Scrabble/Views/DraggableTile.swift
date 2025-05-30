@@ -8,15 +8,17 @@
 import SwiftUI
 
 struct DraggableTile: View {
+    @ObservedObject var dragManager: DragManager
+    @ObservedObject var viewModel: GameViewModel
+    
     @Binding var tile: Tile
-    let boardFrame: CGRect
-    let viewModel: GameViewModel
-    let tileSize: CGFloat
 
     @State private var dragOffset: CGSize = .zero
 
     var body: some View {
         GeometryReader { geo in
+            let tileSize = dragManager.boardFrame.width / 15
+            
             TileView(letter: tile.letter, size: tileSize)
                 .offset(dragOffset)
                 .gesture(
@@ -25,14 +27,11 @@ struct DraggableTile: View {
                             dragOffset = value.translation
                         }
                         .onEnded { value in
-                            // Calculate the drop point based on current tile position + drag offset
-                            // Get the tile’s current position relative to boardFrame
                             guard let pos = tile.boardPosition else {
                                 dragOffset = .zero
                                 return
                             }
                             
-                            let tileSize = boardFrame.width / 15
                             let currentX = CGFloat(pos.col) * tileSize + tileSize / 2
                             let currentY = CGFloat(pos.row) * tileSize + tileSize / 2
 
@@ -41,11 +40,9 @@ struct DraggableTile: View {
                                 x: currentX + value.translation.width,
                                 y: currentY + value.translation.height
                             )
-                            
-                            print("MOVED TILE in DraggableTile")
 
                             dragOffset = .zero
-                            viewModel.updateTilePosition(tile.id, to: dropPoint, boardFrame: boardFrame)
+                            viewModel.updateTilePosition(tile.id, to: dropPoint, dragManager: dragManager)
                         }
                 )
         }
