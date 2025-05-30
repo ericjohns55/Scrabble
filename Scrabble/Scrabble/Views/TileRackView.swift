@@ -12,44 +12,58 @@ struct TileRackView: View {
     
     @Binding var tiles: [Tile]
     let onTileDrop: (UUID, CGPoint) -> Void
+    
+    @State private var tileHeight: CGFloat = 20
+    let extraHeightPadding: CGFloat = 8
+    let widthPadding: CGFloat = 24
 
     var body: some View {
-        GeometryReader { geo in
-            let totalWidth = geo.size.width
-            let tileCount = tiles.count
-            let spacing: CGFloat = 4
-            let availableWidth = totalWidth - CGFloat(tileCount - 1) * spacing
-            let adjustedTileSize = availableWidth / CGFloat(tileCount)
+        VStack {
+            GeometryReader { geo in
+                let totalWidth = geo.size.width - widthPadding
+                let tileCount = tiles.count
+                let spacing: CGFloat = 4
+                let availableWidth = totalWidth - CGFloat(tileCount - 1) * spacing
+                let adjustedTileSize = availableWidth / CGFloat(tileCount)
 
-            ZStack {
-                ForEach($tiles) { $tile in
-                    if tile.boardPosition == nil {
-                        TileView(letter: tile.letter, size: adjustedTileSize)
-                            .position(rackPosition(for: tile, tileSize: adjustedTileSize, spacing: spacing))
-                            .offset(tile.offset)
-                            .gesture(
-                                DragGesture()
-                                    .onChanged { value in
-                                        tile.offset = value.translation
-                                    }
-                                    .onEnded { value in
-                                        let globalDropPoint = value.locationInViewGlobal(in: geo)
-                                        
-                                        // convert global point into board's coordinate space
-                                        let boardOrigin = dragManager.boardFrame.origin
-                                        let dropPointInBoard = CGPoint(
-                                            x: globalDropPoint.x - boardOrigin.x,
-                                            y: globalDropPoint.y - boardOrigin.y
-                                        )
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.gray)
+                        .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                        .onAppear {
+                            tileHeight = adjustedTileSize
+                        }
+                    
+                    ForEach($tiles) { $tile in
+                        if tile.boardPosition == nil {
+                            TileView(letter: tile.letter, size: adjustedTileSize)
+                                .position(rackPosition(for: tile, tileSize: adjustedTileSize, spacing: spacing)
+                                    .applying(CGAffineTransform(translationX: 0, y: extraHeightPadding / 2)))
+                                .offset(tile.offset)
+                                .gesture(
+                                    DragGesture()
+                                        .onChanged { value in
+                                            tile.offset = value.translation
+                                        }
+                                        .onEnded { value in
+                                            let globalDropPoint = value.locationInViewGlobal(in: geo)
+                                            
+                                            // convert global point into board's coordinate space
+                                            let boardOrigin = dragManager.boardFrame.origin
+                                            let dropPointInBoard = CGPoint(
+                                                x: globalDropPoint.x - boardOrigin.x,
+                                                y: globalDropPoint.y - boardOrigin.y
+                                            )
 
-                                        tile.offset = .zero
-                                        onTileDrop(tile.id, dropPointInBoard)
-                                    }
-                            )
-                            .animation(.easeInOut(duration: 0.2), value: tile.offset)
+                                            tile.offset = .zero
+                                            onTileDrop(tile.id, dropPointInBoard)
+                                        }
+                                )
+                                .animation(.easeInOut(duration: 0.2), value: tile.offset)
+                        }
                     }
                 }
-            }
+            }.frame(height: tileHeight + extraHeightPadding)
         }
     }
 
@@ -58,8 +72,8 @@ struct TileRackView: View {
             return .zero
         }
 
-        let x = CGFloat(index) * (tileSize + spacing) + tileSize / 2
-        let y = tileSize / 2 + 10
+        let x = CGFloat(index) * (tileSize + spacing) + tileSize / 2 + widthPadding / 2
+        let y = tileSize / 2
         return CGPoint(x: x, y: y)
     }
 }

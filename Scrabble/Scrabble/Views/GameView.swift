@@ -18,8 +18,15 @@ struct GameView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            Text("Scrabble")
+                .foregroundStyle(.white)
+                .font(.title)
+                .bold()
+                .padding(.bottom, 8)
+            
             BoardView(viewModel: viewModel, dragManager: dragManager)
                 .aspectRatio(1, contentMode: .fit)
+                .padding(.bottom, 8)
 
             TileRackView(
                 dragManager: dragManager,
@@ -28,8 +35,11 @@ struct GameView: View {
                     viewModel.updateTilePosition(id, to: dropPoint, dragManager: dragManager)
                 }
             )
-            .frame(height: dragManager.boardFrame.width / 15 + 20)
-            .padding(.top, 8)
+            .padding(.bottom, 8)
+            
+            Button("Recall Tiles") {
+                viewModel.recallTiles()
+            }
         }
     }
 }
