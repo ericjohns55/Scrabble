@@ -19,31 +19,32 @@ struct DraggableTile: View {
         GeometryReader { geo in
             let tileSize = dragManager.boardFrame.width / 15
             
-            TileView(letter: tile.letter, size: tileSize)
+            TileView(tile: tile, size: tileSize)
                 .offset(dragOffset)
                 .gesture(
-                    DragGesture()
-                        .onChanged { value in
-                            dragOffset = value.translation
-                        }
-                        .onEnded { value in
-                            guard let pos = tile.boardPosition else {
-                                dragOffset = .zero
-                                return
+                    tile.tileState == .committedToBoard ? nil :
+                        DragGesture()
+                            .onChanged { value in
+                                dragOffset = value.translation
                             }
-                            
-                            let currentX = CGFloat(pos.col) * tileSize + tileSize / 2
-                            let currentY = CGFloat(pos.row) * tileSize + tileSize / 2
-
-                            // Final drop point in board coordinates:
-                            let dropPoint = CGPoint(
-                                x: currentX + value.translation.width,
-                                y: currentY + value.translation.height
-                            )
-
-                            dragOffset = .zero
-                            viewModel.updateTilePosition(tile.id, to: dropPoint, dragManager: dragManager)
-                        }
+                            .onEnded { value in
+                                guard let pos = tile.boardPosition else {
+                                    dragOffset = .zero
+                                    return
+                                }
+                                
+                                let currentX = CGFloat(pos.col) * tileSize + tileSize / 2
+                                let currentY = CGFloat(pos.row) * tileSize + tileSize / 2
+                                
+                                // Final drop point in board coordinates:
+                                let dropPoint = CGPoint(
+                                    x: currentX + value.translation.width,
+                                    y: currentY + value.translation.height
+                                )
+                                
+                                dragOffset = .zero
+                                viewModel.updateTilePosition(tile.id, to: dropPoint, dragManager: dragManager)
+                            }
                 )
         }
     }

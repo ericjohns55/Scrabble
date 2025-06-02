@@ -24,7 +24,7 @@ struct BoardView: View {
                     }
                 }
 
-                ForEach($viewModel.tiles) { $tile in
+                ForEach($viewModel.allTiles) { $tile in
                     if let position = tile.boardPosition {
                         let tileSize = dragManager.boardFrame.width / 15
 

@@ -30,7 +30,8 @@ struct GameView: View {
 
             TileRackView(
                 dragManager: dragManager,
-                tiles: $viewModel.tiles,
+                tiles: $viewModel.allTiles,
+                tileRackUuids: $viewModel.tileRack,
                 onTileDrop: { id, dropPoint in
                     viewModel.updateTilePosition(id, to: dropPoint, dragManager: dragManager)
                 }
@@ -39,6 +40,10 @@ struct GameView: View {
             
             Button("Recall Tiles") {
                 viewModel.recallTiles()
+            }
+            
+            Button("Commit Tiles") {
+                viewModel.commitTiles()
             }
         }
     }

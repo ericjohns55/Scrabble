@@ -7,6 +7,13 @@
 
 import Foundation
 
+enum TileState {
+    case inTileBag
+    case committedToBoard
+    case placedByPlayer
+    case inPlayerHand
+}
+
 struct BoardPosition: Equatable {
     var row: Int
     var col: Int
@@ -15,6 +22,14 @@ struct BoardPosition: Equatable {
 struct Tile: Identifiable, Equatable {
     let id = UUID()
     let letter: String
+    let points: Int
+    var tileState: TileState = .inTileBag
     var boardPosition: BoardPosition? = nil
     var offset: CGSize = .zero
+}
+
+extension Tile {
+    func isActiveTile() -> Bool {
+        return tileState == .inPlayerHand || tileState == .placedByPlayer
+    }
 }
