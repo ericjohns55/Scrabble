@@ -15,6 +15,8 @@ class DragManager: ObservableObject {
 struct GameView: View {
     @StateObject private var viewModel = GameViewModel()
     @StateObject private var dragManager = DragManager()
+    
+    private let buttonHeight: CGFloat = 72
 
     var body: some View {
         VStack(spacing: 0) {
@@ -28,23 +30,32 @@ struct GameView: View {
                 .aspectRatio(1, contentMode: .fit)
                 .padding(.bottom, 8)
 
-            TileRackView(
-                dragManager: dragManager,
-                tiles: $viewModel.allTiles,
-                tileRackUuids: $viewModel.tileRack,
-                onTileDrop: { id, dropPoint in
-                    viewModel.updateTilePosition(id, to: dropPoint, dragManager: dragManager)
+            TileRackView(viewModel: viewModel, dragManager: dragManager)
+                .padding(.bottom, 8)
+            
+            HStack {
+                Button(action: {
+                    viewModel.recallTiles()
+                }) {
+                    Text("Recall Tiles")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-            )
-            .padding(.bottom, 8)
-            
-            Button("Recall Tiles") {
-                viewModel.recallTiles()
+                .contentShape(Rectangle())
+                .border(.gray)
+                .padding(10)
+                
+                
+                Button(action: {
+                    viewModel.commitTiles()
+                }) {
+                    Text("Commit Tiles")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .contentShape(Rectangle())
+                .border(.gray)
+                .padding(10)
             }
-            
-            Button("Commit Tiles") {
-                viewModel.commitTiles()
-            }
+            .frame(maxWidth: .infinity, maxHeight: buttonHeight)
         }
     }
 }
