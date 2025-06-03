@@ -65,11 +65,12 @@ struct TileRackView: View {
                                             } else {
                                                 // Drop on board by converting global point into board's coordinate space
                                                 
-                                                let globalDropPoint = value.locationInViewGlobal(in: geo)
-                                                let boardOrigin = dragManager.boardFrame.origin
-                                                let dropPointInBoard = CGPoint(
-                                                    x: globalDropPoint.x - boardOrigin.x,
-                                                    y: globalDropPoint.y - boardOrigin.y)
+                                                let dropPointInBoard = convertGlobalToBoardPoint(
+                                                    globalPoint: value.locationInViewGlobal(in: geo),
+                                                    boardOrigin: dragManager.boardFrame.origin,
+                                                    boardSize: dragManager.boardFrame.width,
+                                                    boardOffset: dragManager.boardOffset,
+                                                    zoomScale: dragManager.boardZoomScale)
                                                 
                                                 viewModel.updateTilePosition(tile.id, to: dropPointInBoard, dragManager: dragManager)
                                             }
@@ -84,6 +85,29 @@ struct TileRackView: View {
             }.frame(height: tileHeight + extraHeightPadding)
         }
     }
+    
+    func convertGlobalToBoardPoint(globalPoint: CGPoint, boardOrigin: CGPoint, boardSize: CGFloat, boardOffset: CGSize, zoomScale: CGFloat) -> CGPoint {
+        let localX = globalPoint.x - boardOrigin.x
+        let localY = globalPoint.y - boardOrigin.y
+        
+        let centerX = boardSize / 2
+        let centerY = boardSize / 2
+        
+        let centeredX = localX - centerX
+        let centeredY = localY - centerY
+        
+        let unpannedX = centeredX - boardOffset.width
+        let unpannedY = centeredY - boardOffset.height
+        
+        let unscaledX = unpannedX / zoomScale
+        let unscaledY = unpannedY / zoomScale
+        
+        let boardX = unscaledX + centerX
+        let boardY = unscaledY + centerY
+        
+        return CGPoint(x: boardX, y: boardY)
+    }
+
 
     private func rackPosition(for tile: Tile, tileSize: CGFloat, spacing: CGFloat) -> CGPoint {
         let index = viewModel.tileRack.firstIndex(of: tile.id)!

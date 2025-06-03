@@ -10,6 +10,8 @@ import SwiftUI
 class DragManager: ObservableObject {
     @Published var boardFrame: CGRect = .zero
     @Published var dropLocationInBoard: CGPoint?
+    @Published var boardZoomScale: CGFloat = 1.0
+    @Published var boardOffset: CGSize = .zero
 }
 
 struct GameView: View {

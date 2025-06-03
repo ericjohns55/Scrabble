@@ -68,6 +68,11 @@ class GameViewModel: ObservableObject {
 
     func updateTilePosition(_ tileID: UUID, to dropPoint: CGPoint, dragManager: DragManager) {
         guard let index = allTiles.firstIndex(where: { $0.id == tileID }) else { return }
+        
+        print("BOARD FRAME: \(dragManager.boardFrame)")
+        print("DROP POINT: \(dropPoint)")
+        print("IN BOUNDS: \(dragManager.boardFrame.contains(dropPoint))")
+        // TODO: make sure tile is in bounds of visible rectangle
 
         let tileSize = dragManager.boardFrame.width / 15
         let col = Int(dropPoint.x / tileSize)
