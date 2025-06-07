@@ -16,11 +16,35 @@ struct TileBreakdown {
 class GameViewModel: ObservableObject {
     @Published var allTiles: [Tile] = []
     @Published var tileRack: [UUID] = []
+    
+    private var wordSet: Set<String> = []
 
     let boardSize = 15
     let tileSize: CGFloat = 44
 
     init() {
+        loadWordList()
+        populateTileBag()
+        
+        for i in 0..<7 {
+            allTiles[i].tileState = .inPlayerHand
+            tileRack.append(allTiles[i].id)
+        }
+    }
+    
+    private func loadWordList() {
+        print("Loading all words from resources...")
+        
+        if let wordSetPath = Bundle.main.path(forResource: "WordList", ofType: "txt") {
+            if let fileContents = try? String(contentsOfFile: wordSetPath, encoding: .utf8) {
+                wordSet = Set(fileContents.components(separatedBy: .newlines).filter { !$0.isEmpty })
+            }
+        }
+        
+        print("Loaded \(wordSet.count) words")
+    }
+    
+    private func populateTileBag() {
         let tileBag = [
             TileBreakdown(letter: "?", count: 2, points: 0),
             TileBreakdown(letter: "A", count: 9, points: 1),
@@ -59,11 +83,10 @@ class GameViewModel: ObservableObject {
         }
         
         allTiles.shuffle()
-        
-        for i in 0..<7 {
-            allTiles[i].tileState = .inPlayerHand
-            tileRack.append(allTiles[i].id)
-        }
+    }
+    
+    func isWordValid(_ word: String) -> Bool {
+        return wordSet.contains(word.lowercased())
     }
 
     func updateTilePosition(_ tileID: UUID, to dropPoint: CGPoint, dragManager: DragManager) {
@@ -108,6 +131,7 @@ class GameViewModel: ObservableObject {
                 allTiles[index].boardPosition = nil
                 allTiles[index].offset = .zero
                 allTiles[index].tileState = .inPlayerHand
+                print(allTiles[index])
             }
         }
     }
