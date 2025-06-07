@@ -19,6 +19,14 @@ struct GameView: View {
     @StateObject private var dragManager = DragManager()
     
     private let buttonHeight: CGFloat = 72
+    
+    var tilePlacementValid: Bool {
+        viewModel.wordValidator.tilePlacementValid
+    }
+    
+    var currentWord: String {
+        return viewModel.wordValidator.tilePlacementValid ? viewModel.wordValidator.currentWord : "(invalid)"
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -58,6 +66,12 @@ struct GameView: View {
                 .padding(10)
             }
             .frame(maxWidth: .infinity, maxHeight: buttonHeight)
+            
+            Text("Tile Placement: \(tilePlacementValid ? "VALID" : "INVALID")")
+                .foregroundStyle(tilePlacementValid ? .green : .red)
+            
+            Text("Current Word: \(currentWord)")
+                .foregroundStyle(tilePlacementValid ? .green : .red)
         }
     }
 }

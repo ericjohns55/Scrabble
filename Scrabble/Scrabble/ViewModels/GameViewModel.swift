@@ -18,29 +18,15 @@ class GameViewModel: ObservableObject {
     @Published var committedTiles: [Tile] = []
     @Published var tileBag: [Tile] = []
     
-    private var wordSet: Set<String> = []
+    lazy var wordValidator = WordValidator(gameViewModel: self)
 
     let boardSize = BoardView.GRID_SIZE
     let tileSize: CGFloat = 44
     let maxTiles: Int = 7
 
     init() {
-        loadWordList()
         populateTileBag()
-        
         drawTiles(maxTiles)
-    }
-    
-    private func loadWordList() {
-        print("Loading all words from resources...")
-        
-        if let wordSetPath = Bundle.main.path(forResource: "WordList", ofType: "txt") {
-            if let fileContents = try? String(contentsOfFile: wordSetPath, encoding: .utf8) {
-                wordSet = Set(fileContents.components(separatedBy: .newlines).filter { !$0.isEmpty })
-            }
-        }
-        
-        print("Loaded \(wordSet.count) words")
     }
     
     private func populateTileBag() {
@@ -96,10 +82,6 @@ class GameViewModel: ObservableObject {
             playerTiles.append(tileToDraw)
         }
     }
-    
-    func isWordValid(_ word: String) -> Bool {
-        return wordSet.contains(word.lowercased())
-    }
 
     func updateTilePosition(_ tileID: UUID, to dropPoint: CGPoint, dragManager: DragManager) {
         guard let index = playerTiles.firstIndex(where: { $0.id == tileID }) else { return }
@@ -126,6 +108,11 @@ class GameViewModel: ObservableObject {
                 playerTiles[index].tileState = .inPlayerHand
             }
         }
+        
+        if (wordValidator.validateTilePlacement()) {
+            // calculate all words
+            // validate all words
+        }
     }
     
     func recallTiles() {
@@ -138,6 +125,8 @@ class GameViewModel: ObservableObject {
                 playerTiles[tileIndex].tileState = .inPlayerHand
             }
         }
+        
+        _ = wordValidator.validateTilePlacement()
     }
     
     func commitTiles() {
@@ -152,5 +141,7 @@ class GameViewModel: ObservableObject {
         
         let numTilesToDraw = maxTiles - playerTiles.count
         drawTiles(numTilesToDraw)
+        
+        _ = wordValidator.validateTilePlacement()
     }
 }
