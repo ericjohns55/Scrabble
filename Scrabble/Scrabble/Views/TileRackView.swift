@@ -21,7 +21,7 @@ struct TileRackView: View {
         VStack {
             GeometryReader { geo in
                 let totalWidth = geo.size.width - widthPadding
-                let tileCount = viewModel.allTiles.filter { $0.tileState == .inPlayerHand || $0.tileState == .placedByPlayer }.count
+                let tileCount = viewModel.maxTiles
                 let spacing: CGFloat = 4
                 let availableWidth = totalWidth - CGFloat(tileCount - 1) * spacing
                 let adjustedTileSize = availableWidth / CGFloat(tileCount)
@@ -34,8 +34,8 @@ struct TileRackView: View {
                             tileHeight = adjustedTileSize
                         }
                     
-                    ForEach($viewModel.allTiles) { $tile in
-                        if (viewModel.tileRack.contains($tile.id) && tile.tileState == .inPlayerHand) {
+                    ForEach($viewModel.playerTiles) { $tile in
+                        if (tile.tileState == .inPlayerHand) {
                             TileView(tile: tile, size: adjustedTileSize)
                                 .position(rackPosition(for: tile, tileSize: adjustedTileSize, spacing: spacing)
                                     .applying(CGAffineTransform(translationX: 0, y: extraHeightPadding / 2)))
@@ -53,13 +53,13 @@ struct TileRackView: View {
                                             if (localDropPoint.y > 0) {
                                                 // Rearrange tile rack
                                                 
-                                                if let fromIndex = viewModel.tileRack.firstIndex(of: tile.id) {
+                                                if let fromIndex = viewModel.playerTiles.firstIndex(where: { $0.id == tile.id }) {
                                                     let toIndex = indexForDropLocation(localDropPoint, tileSize: adjustedTileSize, spacing: spacing)
                                                     
                                                     if (fromIndex != toIndex) {
                                                         let toOffset = toIndex > fromIndex ? toIndex + 1 : toIndex
                                                         
-                                                        viewModel.tileRack.move(fromOffsets: IndexSet(integer: fromIndex), toOffset: toOffset)
+                                                        viewModel.playerTiles.move(fromOffsets: IndexSet(integer: fromIndex), toOffset: toOffset)
                                                     }
                                                 }
                                             } else {
@@ -110,7 +110,7 @@ struct TileRackView: View {
 
 
     private func rackPosition(for tile: Tile, tileSize: CGFloat, spacing: CGFloat) -> CGPoint {
-        let index = viewModel.tileRack.firstIndex(of: tile.id)!
+        let index = $viewModel.playerTiles.firstIndex(where: { $0.id == tile.id})!
         
         let x = CGFloat(index) * (tileSize + spacing) + tileSize / 2 + widthPadding / 2
         let y = tileSize / 2
@@ -120,7 +120,7 @@ struct TileRackView: View {
     private func indexForDropLocation(_ location: CGPoint, tileSize: CGFloat, spacing: CGFloat) -> Int {
         let tileWidthWithSpacing = tileSize + spacing
         let index = Int((location.x - widthPadding / 2) / tileWidthWithSpacing)
-        return min(max(index, 0), viewModel.tileRack.count - 1)
+        return min(max(index, 0), viewModel.playerTiles.count - 1)
     }
 }
 

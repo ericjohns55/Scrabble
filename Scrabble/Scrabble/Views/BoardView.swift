@@ -13,12 +13,15 @@ struct BoardView: View {
     
     @State private var lastOffset: CGSize = .zero
     @State private var isZoomedIn = false
+    
+    public static let GRID_SIZE: Int = 15
 
-    let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 15)
+    let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: GRID_SIZE)
 
     var body: some View {
         GeometryReader { geometry in
             let boardSize = min(geometry.size.width, geometry.size.height)
+            let tileSize = dragManager.boardFrame.width / CGFloat(BoardView.GRID_SIZE)
             
             let snapZoomGesture = MagnificationGesture()
                 .onEnded { value in
@@ -55,27 +58,20 @@ struct BoardView: View {
             
             ZStack(alignment: .topLeading) {
                 LazyVGrid(columns: columns, spacing: 0) {
-                    ForEach(0..<(15*15)) { _ in
+                    ForEach(0..<(BoardView.GRID_SIZE * BoardView.GRID_SIZE), id: \.self) { _ in
                         Rectangle()
                             .stroke(Color.gray.opacity(0.5), lineWidth: 0.5)
                             .aspectRatio(1, contentMode: .fit)
                     }
                 }
+                
+                ForEach($viewModel.committedTiles) { $tile in
+                    createDraggableTile($tile, tileSize: tileSize)
+                }
 
-                ForEach($viewModel.allTiles) { $tile in
-                    if let position = tile.boardPosition {
-                        let tileSize = dragManager.boardFrame.width / 15
-
-                        DraggableTile(
-                            dragManager: dragManager,
-                            viewModel: viewModel,
-                            tile: $tile
-                        )
-                        .frame(width: tileSize, height: tileSize)
-                        .position(
-                            x: CGFloat(position.col) * tileSize + tileSize / 2,
-                            y: CGFloat(position.row) * tileSize + tileSize / 2
-                        )
+                ForEach($viewModel.playerTiles) { $tile in
+                    if (tile.boardPosition != nil) {
+                        createDraggableTile($tile, tileSize: tileSize)
                     }
                 }
             }
@@ -90,6 +86,20 @@ struct BoardView: View {
                 dragManager.boardFrame = geometry.frame(in: .global)
             }
         }
+    }
+    
+    @ViewBuilder
+    private func createDraggableTile(_ tile: Binding<Tile>, tileSize: CGFloat) -> some View {
+        DraggableTile(
+            dragManager: dragManager,
+            viewModel: viewModel,
+            tile: tile
+        )
+        .frame(width: tileSize, height: tileSize)
+        .position(
+            x: CGFloat(tile.boardPosition.wrappedValue!.col) * tileSize + tileSize / 2,
+            y: CGFloat(tile.boardPosition.wrappedValue!.row) * tileSize + tileSize / 2
+        )
     }
 }
 

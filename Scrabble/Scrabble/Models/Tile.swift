@@ -27,9 +27,3 @@ struct Tile: Identifiable, Equatable {
     var boardPosition: BoardPosition? = nil
     var offset: CGSize = .zero
 }
-
-extension Tile {
-    func isActiveTile() -> Bool {
-        return tileState == .inPlayerHand || tileState == .placedByPlayer
-    }
-}

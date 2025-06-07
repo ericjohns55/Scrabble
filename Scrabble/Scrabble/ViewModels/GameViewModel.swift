@@ -14,22 +14,21 @@ struct TileBreakdown {
 }
 
 class GameViewModel: ObservableObject {
-    @Published var allTiles: [Tile] = []
-    @Published var tileRack: [UUID] = []
+    @Published var playerTiles: [Tile] = []
+    @Published var committedTiles: [Tile] = []
+    @Published var tileBag: [Tile] = []
     
     private var wordSet: Set<String> = []
 
-    let boardSize = 15
+    let boardSize = BoardView.GRID_SIZE
     let tileSize: CGFloat = 44
+    let maxTiles: Int = 7
 
     init() {
         loadWordList()
         populateTileBag()
         
-        for i in 0..<7 {
-            allTiles[i].tileState = .inPlayerHand
-            tileRack.append(allTiles[i].id)
-        }
+        drawTiles(maxTiles)
     }
     
     private func loadWordList() {
@@ -45,7 +44,7 @@ class GameViewModel: ObservableObject {
     }
     
     private func populateTileBag() {
-        let tileBag = [
+        let tileBreakdowns = [
             TileBreakdown(letter: "?", count: 2, points: 0),
             TileBreakdown(letter: "A", count: 9, points: 1),
             TileBreakdown(letter: "B", count: 2, points: 4),
@@ -75,14 +74,27 @@ class GameViewModel: ObservableObject {
             TileBreakdown(letter: "Z", count: 1, points: 10)
         ]
         
-        allTiles = []
-        for tile in tileBag {
+        tileBag = []
+        for tile in tileBreakdowns {
             for _ in 0..<tile.count {
-                allTiles.append(Tile(letter: tile.letter, points: tile.points))
+                tileBag.append(Tile(letter: tile.letter, points: tile.points))
             }
         }
         
-        allTiles.shuffle()
+        tileBag.shuffle()
+    }
+    
+    func drawTiles(_ count: Int) {
+        for _ in 0..<count {
+            if tileBag.isEmpty {
+                break
+            }
+            
+            var tileToDraw = tileBag.removeLast()
+            tileToDraw.tileState = .inPlayerHand
+            
+            playerTiles.append(tileToDraw)
+        }
     }
     
     func isWordValid(_ word: String) -> Bool {
@@ -90,75 +102,55 @@ class GameViewModel: ObservableObject {
     }
 
     func updateTilePosition(_ tileID: UUID, to dropPoint: CGPoint, dragManager: DragManager) {
-        guard let index = allTiles.firstIndex(where: { $0.id == tileID }) else { return }
+        guard let index = playerTiles.firstIndex(where: { $0.id == tileID }) else { return }
         
-        print("BOARD FRAME: \(dragManager.boardFrame)")
-        print("DROP POINT: \(dropPoint)")
-        print("IN BOUNDS: \(dragManager.boardFrame.contains(dropPoint))")
         // TODO: make sure tile is in bounds of visible rectangle
+//        print("BOARD FRAME: \(dragManager.boardFrame)")
+//        print("DROP POINT: \(dropPoint)")
+//        print("IN BOUNDS: \(dragManager.boardFrame.contains(dropPoint))")
 
-        let tileSize = dragManager.boardFrame.width / 15
+        let tileSize = dragManager.boardFrame.width / CGFloat(boardSize)
         let col = Int(dropPoint.x / tileSize)
         let row = Int(dropPoint.y / tileSize)
         
-        let existingTile = allTiles.firstIndex(where: { $0.boardPosition?.row == row && $0.boardPosition?.col == col })
+        let existingTile = playerTiles.firstIndex(where: { $0.boardPosition?.row == row && $0.boardPosition?.col == col })
+                        ?? committedTiles.firstIndex(where: { $0.boardPosition?.row == row && $0.boardPosition?.col == col})
         
         if (existingTile == nil) {
-            if row >= 0, row < 15, col >= 0, col < 15 {
-                allTiles[index].boardPosition = BoardPosition(row: row, col: col)
-                allTiles[index].offset = .zero
-                allTiles[index].tileState = .placedByPlayer
+            if row >= 0, row < boardSize, col >= 0, col < boardSize {
+                playerTiles[index].boardPosition = BoardPosition(row: row, col: col)
+                playerTiles[index].offset = .zero
+                playerTiles[index].tileState = .placedByPlayer
             } else {
-                allTiles[index].boardPosition = nil // tile returns to rack
-                allTiles[index].tileState = .inPlayerHand
-            }
-        }
-    }
-    
-    func recalculateTileRack() {
-        tileRack = []
-        
-        for (index, _) in allTiles.enumerated() {
-            if (allTiles[index].isActiveTile()) {
-                tileRack.append(allTiles[index].id)
+                playerTiles[index].boardPosition = nil // tile returns to rack
+                playerTiles[index].tileState = .inPlayerHand
             }
         }
     }
     
     func recallTiles() {
-        for (index, _) in allTiles.enumerated() {
-            if (allTiles[index].tileState == .placedByPlayer) {
-                allTiles[index].boardPosition = nil
-                allTiles[index].offset = .zero
-                allTiles[index].tileState = .inPlayerHand
-                print(allTiles[index])
+        for (_, currentTile) in playerTiles.enumerated() {
+            if (currentTile.tileState == .placedByPlayer) {
+                let tileIndex = playerTiles.firstIndex(of: currentTile)!
+                
+                playerTiles[tileIndex].boardPosition = nil
+                playerTiles[tileIndex].offset = .zero
+                playerTiles[tileIndex].tileState = .inPlayerHand
             }
         }
     }
     
     func commitTiles() {
-        for (index, _) in allTiles.enumerated() {
-            if (allTiles[index].tileState == .placedByPlayer) {
-                allTiles[index].tileState = .committedToBoard
+        for (_, currentTile) in playerTiles.enumerated() {
+            if (currentTile.tileState == .placedByPlayer) {
+                let indexInHand = playerTiles.firstIndex(of: currentTile)!
+                
+                playerTiles[indexInHand].tileState = .committedToBoard
+                committedTiles.append(playerTiles.remove(at: indexInHand))
             }
         }
         
-        let numTilesToPlace = 7 - allTiles.filter { $0.tileState == .inPlayerHand }.count
-        var currentTileIndex = 0
-        
-        for _ in 0..<numTilesToPlace {
-            while allTiles[currentTileIndex].tileState != .inTileBag {
-                currentTileIndex += 1
-            }
-            
-            allTiles[currentTileIndex].tileState = .inPlayerHand
-            
-            currentTileIndex += 1
-            if currentTileIndex >= allTiles.count {
-                currentTileIndex = 0
-            }
-        }
-        
-        recalculateTileRack()
+        let numTilesToDraw = maxTiles - playerTiles.count
+        drawTiles(numTilesToDraw)
     }
 }
