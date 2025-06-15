@@ -7,11 +7,27 @@
 
 import SwiftUI
 
+enum PlacementStatus {
+    case valid, invalid, tooShort, none
+    
+    static func getColor(for status: PlacementStatus) -> Color {
+        switch status {
+            case .valid:
+                return .green
+            case .invalid:
+                return .red
+            default:
+                return .blue
+        }
+    }
+}
+
 class WordValidator: ObservableObject {
     unowned let game: GameViewModel
     
-    @Published var tilePlacementValid: Bool = true
-    @Published var currentWord: String = ""
+    @Published var placementState: PlacementStatus = .none
+    @Published var currentValidWords: String = ""
+    @Published var currentInvalidWords: String = ""
     
     private var wordSet: Set<String> = []
     
@@ -29,51 +45,102 @@ class WordValidator: ObservableObject {
         print("Loaded \(wordSet.count) words")
     }
         
-    func validateTilePlacement() -> Bool {
+    func updateTileState() {
         if (game.playerTiles.allSatisfy { $0.tileState == .inPlayerHand }) {
-            tilePlacementValid = true
-            return true
+            updateTileState(.none)
+            return
         }
         
-        let tilesToConsider = game.playerTiles.filter { $0.tileState == .placedByPlayer }
-        let allSameColumn = tilesToConsider.allSatisfy { $0.boardPosition?.col == tilesToConsider.first?.boardPosition?.col }
-        let allSameRow = tilesToConsider.allSatisfy { $0.boardPosition?.row == tilesToConsider.first?.boardPosition?.row }
+        let placedTiles = game.playerTiles.filter { $0.tileState == .placedByPlayer }
+        let allSameColumn = placedTiles.allSatisfy { $0.boardPosition?.col == placedTiles.first?.boardPosition?.col }
+        let allSameRow = placedTiles.allSatisfy { $0.boardPosition?.row == placedTiles.first?.boardPosition?.row }
         
         // if they do not all share the same row or column then they must be invalid
         if (!allSameRow && !allSameColumn) {
-            tilePlacementValid = false
-            return false
+            updateTileState(.invalid)
+            return
         }
         
-        var mappedPositions: [Int] = []
-        if (allSameRow) {
-            // check consecutive rows
-            mappedPositions = tilesToConsider.map { $0.boardPosition!.col }.sorted()
-        } else {
-            // check consecutive cols
-            mappedPositions = tilesToConsider.map { $0.boardPosition!.row }.sorted()
-        }
+        var allCreatedWords: [Word] = []
         
-        let areConsecutive: Bool = zip(mappedPositions, mappedPositions.dropFirst()).allSatisfy { $1 == $0 + 1 }
-        
-        var isValidWord = false
-        if (areConsecutive) {
-            // check word
-            var wordBuilder = ""
-            
-            for i in 0..<mappedPositions.count {
-                if (allSameRow) {
-                    wordBuilder += tilesToConsider.first(where: { $0.boardPosition!.col == mappedPositions[i] })!.letter
+        if (placedTiles.count != 1) {
+            if (allSameRow) {
+                // check consecutive rows
+                print("Checking for vertical words in created row...")
+                
+                // find all words created vertically
+                for placedTile in placedTiles.sorted(by: { $0.boardPosition!.col < $1.boardPosition!.col }) {
+                    if let createdWord = game.boardViewModel.getWordVertical(placedTile.id) {
+                        allCreatedWords.append(createdWord)
+                    }
+                }
+                
+                // find the word created horizontally (guaranteed to only have one)
+                if let createdWord = game.boardViewModel.getWordHorizontal(placedTiles.first!.id) {
+                    allCreatedWords.append(createdWord)
                 } else {
-                    wordBuilder += tilesToConsider.first(where: { $0.boardPosition!.row == mappedPositions[i] })!.letter
+                    print("Could not find horizontally created word")
                 }
             }
             
-            currentWord = wordBuilder.uppercased()
-            isValidWord = wordSet.contains(currentWord)
+            if (allSameColumn) {
+                // check consecutive cols
+                print("Checking for horizontal words in created column...")
+                
+                // find all words created horizontally
+                for placedTile in placedTiles.sorted(by: { $0.boardPosition!.row < $1.boardPosition!.col }) {
+                    if let createdWord = game.boardViewModel.getWordHorizontal(placedTile.id) {
+                        allCreatedWords.append(createdWord)
+                    }
+                }
+                
+                if let createdWord = game.boardViewModel.getWordVertical(placedTiles.first!.id) {
+                    allCreatedWords.append(createdWord)
+                } else {
+                    print("Could not find vertically created word")
+                }
+            }
+        } else {
+            let placedTileId = placedTiles.first!.id
+            
+            if let horizontalWord = game.boardViewModel.getWordHorizontal(placedTileId) {
+                allCreatedWords.append(horizontalWord)
+            }
+            
+            if let verticalWord = game.boardViewModel.getWordVertical(placedTileId) {
+                allCreatedWords.append(verticalWord)
+            }
         }
         
-        tilePlacementValid = areConsecutive && isValidWord
-        return tilePlacementValid
+        if (allCreatedWords.count > 0) {
+            // check word
+            var validWords = Set<String>()
+            var invalidWords = Set<String>()
+            
+            for createdWord in allCreatedWords {
+                let calculatedWord = createdWord.getWord()
+                
+                if (wordSet.contains(calculatedWord)) {
+                    validWords.insert(calculatedWord)
+                } else {
+                    invalidWords.insert(calculatedWord)
+                }
+            }
+            
+            let validStatus = invalidWords.count > 0 ? PlacementStatus.invalid : PlacementStatus.valid
+            updateTileState(validStatus, validWords: validWords.joined(separator: ", "), invalidWords: invalidWords.joined(separator: ", "))
+        } else {
+            if (placedTiles.count == 1) {
+                updateTileState(.tooShort)
+            } else {
+                updateTileState(.invalid)
+            }
+        }
+    }
+    
+    private func updateTileState(_ placementStatus: PlacementStatus, validWords: String = "", invalidWords: String = "") {
+        self.placementState = placementStatus
+        self.currentValidWords = validWords
+        self.currentInvalidWords = invalidWords
     }
 }

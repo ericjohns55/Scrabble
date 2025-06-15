@@ -15,7 +15,7 @@ struct TileView: View {
         Text(tile.letter)
             .font(.title2.bold())
             .frame(width: size, height: size)
-            .background(tile.tileState != .committedToBoard ? Color.yellow : Color.red)
+            .background(tile.tileState != .committedToBoard ? Color.yellow : Color.pink)
             .cornerRadius(8)
             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black))
     }

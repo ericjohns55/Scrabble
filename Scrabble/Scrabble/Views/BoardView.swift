@@ -13,21 +13,19 @@ struct BoardView: View {
     
     @State private var lastOffset: CGSize = .zero
     @State private var isZoomedIn = false
-    
-    public static let GRID_SIZE: Int = 15
 
-    let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: GRID_SIZE)
+    let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: BoardViewModel.GRID_SIZE)
 
     var body: some View {
         GeometryReader { geometry in
             let boardSize = min(geometry.size.width, geometry.size.height)
-            let tileSize = dragManager.boardFrame.width / CGFloat(BoardView.GRID_SIZE)
+            let tileSize = dragManager.boardFrame.width / CGFloat(BoardViewModel.GRID_SIZE)
             
             let snapZoomGesture = MagnificationGesture()
                 .onEnded { value in
                     let targetScale = dragManager.boardZoomScale * value
                     withAnimation(.easeInOut) {
-                        dragManager.boardZoomScale = (targetScale > 1.5) ? 2.0 : 1.0
+                        dragManager.boardZoomScale = (targetScale > 1.5) ? 1.5 : 1.0
                         isZoomedIn = dragManager.boardZoomScale > 1.0
                         dragManager.boardOffset = .zero
                         lastOffset = .zero
@@ -58,13 +56,20 @@ struct BoardView: View {
             
             ZStack(alignment: .topLeading) {
                 LazyVGrid(columns: columns, spacing: 0) {
-                    ForEach(0..<(BoardView.GRID_SIZE * BoardView.GRID_SIZE), id: \.self) { _ in
+                    ForEach($viewModel.boardViewModel.board) { $boardSquare in
                         Rectangle()
                             .stroke(Color.gray.opacity(0.5), lineWidth: 0.5)
                             .aspectRatio(1, contentMode: .fit)
+                            .background(TileType.getTileColor(boardSquare.tileType))
+                            .overlay(
+                                Text(TileType.getTileText(boardSquare.tileType))
+                                    .font(.caption)
+                                    .bold()
+                                    .foregroundColor(.white)
+                            )
                     }
                 }
-                
+                            
                 ForEach($viewModel.committedTiles) { $tile in
                     createDraggableTile($tile, tileSize: tileSize)
                 }

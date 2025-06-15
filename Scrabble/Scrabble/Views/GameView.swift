@@ -20,14 +20,6 @@ struct GameView: View {
     
     private let buttonHeight: CGFloat = 72
     
-    var tilePlacementValid: Bool {
-        viewModel.wordValidator.tilePlacementValid
-    }
-    
-    var currentWord: String {
-        return viewModel.wordValidator.tilePlacementValid ? viewModel.wordValidator.currentWord : "(invalid)"
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             Text("Scrabble")
@@ -45,15 +37,14 @@ struct GameView: View {
             
             HStack {
                 Button(action: {
-                    viewModel.recallTiles()
+                    viewModel.shuffleOrRecall()
                 }) {
-                    Text("Recall Tiles")
+                    Text(viewModel.canShuffle() ? "Shuffle Tiles" : "Recall Tiles")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 .contentShape(Rectangle())
                 .border(.gray)
                 .padding(10)
-                
                 
                 Button(action: {
                     viewModel.commitTiles()
@@ -67,11 +58,17 @@ struct GameView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: buttonHeight)
             
-            Text("Tile Placement: \(tilePlacementValid ? "VALID" : "INVALID")")
-                .foregroundStyle(tilePlacementValid ? .green : .red)
+            Text("Tile Placement: \(viewModel.wordValidator.placementState)")
+                .foregroundStyle(PlacementStatus.getColor(for: viewModel.wordValidator.placementState))
             
-            Text("Current Word: \(currentWord)")
-                .foregroundStyle(tilePlacementValid ? .green : .red)
+            Text("Valid Words: \(viewModel.wordValidator.currentValidWords)")
+                .foregroundStyle(PlacementStatus.getColor(for: viewModel.wordValidator.placementState))
+            
+            Text("Invalid Words: \(viewModel.wordValidator.currentInvalidWords)")
+                .foregroundStyle(PlacementStatus.getColor(for: viewModel.wordValidator.placementState))
+            
+            Text("Total \(viewModel.boardViewModel.tileCount); Placed: \(viewModel.boardViewModel.placedCount); Committed: \(viewModel.boardViewModel.committedCount)")
+                .foregroundStyle(PlacementStatus.getColor(for: viewModel.wordValidator.placementState))
         }
     }
 }

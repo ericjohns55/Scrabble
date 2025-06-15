@@ -18,9 +18,9 @@ class GameViewModel: ObservableObject {
     @Published var committedTiles: [Tile] = []
     @Published var tileBag: [Tile] = []
     
+    var boardViewModel: BoardViewModel = BoardViewModel()
     lazy var wordValidator = WordValidator(gameViewModel: self)
-
-    let boardSize = BoardView.GRID_SIZE
+    
     let tileSize: CGFloat = 44
     let maxTiles: Int = 7
 
@@ -91,7 +91,7 @@ class GameViewModel: ObservableObject {
 //        print("DROP POINT: \(dropPoint)")
 //        print("IN BOUNDS: \(dragManager.boardFrame.contains(dropPoint))")
 
-        let tileSize = dragManager.boardFrame.width / CGFloat(boardSize)
+        let tileSize = dragManager.boardFrame.width / CGFloat(BoardViewModel.GRID_SIZE)
         let col = Int(dropPoint.x / tileSize)
         let row = Int(dropPoint.y / tileSize)
         
@@ -99,34 +99,54 @@ class GameViewModel: ObservableObject {
                         ?? committedTiles.firstIndex(where: { $0.boardPosition?.row == row && $0.boardPosition?.col == col})
         
         if (existingTile == nil) {
-            if row >= 0, row < boardSize, col >= 0, col < boardSize {
-                playerTiles[index].boardPosition = BoardPosition(row: row, col: col)
-                playerTiles[index].offset = .zero
-                playerTiles[index].tileState = .placedByPlayer
-            } else {
-                playerTiles[index].boardPosition = nil // tile returns to rack
-                playerTiles[index].tileState = .inPlayerHand
+            if let currentBoardSquare = boardViewModel.getBoardSquareByTileId(tileID) {
+                currentBoardSquare.tile = nil
             }
+            
+            var tileToUpdate = playerTiles[index]
+            if row >= 0, row < BoardViewModel.GRID_SIZE, col >= 0, col < BoardViewModel.GRID_SIZE {
+                tileToUpdate.boardPosition = BoardPosition(row: row, col: col)
+                tileToUpdate.offset = .zero
+                tileToUpdate.tileState = .placedByPlayer
+                
+                boardViewModel.updateTileAtPosition(tileToUpdate, row: row, col: col)
+            } else {
+                tileToUpdate.boardPosition = nil // tile returns to rack
+                tileToUpdate.tileState = .inPlayerHand
+                
+                boardViewModel.updateTileAtPosition(nil, row: row, col: col)
+            }
+            
+            playerTiles[index] = tileToUpdate
         }
         
-        if (wordValidator.validateTilePlacement()) {
-            // calculate all words
-            // validate all words
-        }
+        wordValidator.updateTileState()
     }
     
-    func recallTiles() {
-        for (_, currentTile) in playerTiles.enumerated() {
-            if (currentTile.tileState == .placedByPlayer) {
-                let tileIndex = playerTiles.firstIndex(of: currentTile)!
-                
-                playerTiles[tileIndex].boardPosition = nil
-                playerTiles[tileIndex].offset = .zero
-                playerTiles[tileIndex].tileState = .inPlayerHand
+    func canShuffle() -> Bool {
+        return playerTiles.allSatisfy { $0.tileState == .inPlayerHand }
+    }
+    
+    func shuffleOrRecall() {
+        if (canShuffle()) {
+            playerTiles.shuffle()
+        } else {
+            for (_, currentTile) in playerTiles.enumerated() {
+                if (currentTile.tileState == .placedByPlayer) {
+                    let tileIndex = playerTiles.firstIndex(of: currentTile)!
+                    
+                    playerTiles[tileIndex].boardPosition = nil
+                    playerTiles[tileIndex].offset = .zero
+                    playerTiles[tileIndex].tileState = .inPlayerHand
+                    
+                    if let currentBoardSquare = boardViewModel.getBoardSquareByTileId(currentTile.id) {
+                        currentBoardSquare.tile = nil
+                    }
+                }
             }
+            
+            wordValidator.updateTileState()
         }
-        
-        _ = wordValidator.validateTilePlacement()
     }
     
     func commitTiles() {
@@ -134,14 +154,20 @@ class GameViewModel: ObservableObject {
             if (currentTile.tileState == .placedByPlayer) {
                 let indexInHand = playerTiles.firstIndex(of: currentTile)!
                 
-                playerTiles[indexInHand].tileState = .committedToBoard
-                committedTiles.append(playerTiles.remove(at: indexInHand))
+                var tileToUpdate = playerTiles.remove(at: indexInHand)
+                tileToUpdate.tileState = .committedToBoard
+                
+                committedTiles.append(tileToUpdate)
+                
+                if let currentBoardSquare = boardViewModel.getBoardSquareByTileId(currentTile.id) {
+                    currentBoardSquare.tile = tileToUpdate
+                }
             }
         }
         
         let numTilesToDraw = maxTiles - playerTiles.count
         drawTiles(numTilesToDraw)
         
-        _ = wordValidator.validateTilePlacement()
+        wordValidator.updateTileState()
     }
 }
