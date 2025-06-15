@@ -37,4 +37,8 @@ class Word {
         
         return wordBuilder
     }
+    
+    func connectedToExistingTiles() -> Bool {
+        return boardSquares.contains(where: { $0.tile?.tileState == .committedToBoard })
+    }
 }

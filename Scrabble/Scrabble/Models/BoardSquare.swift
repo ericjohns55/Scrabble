@@ -66,10 +66,6 @@ class BoardSquare: Hashable, Equatable, Identifiable {
         self.tileType = BoardSetup.getBoardTile(boardSize, row: row, col: column)
     }
     
-    func hasPlacedTile() -> Bool {
-        return tile != nil
-    }
-    
     static func == (lhs: BoardSquare, rhs: BoardSquare) -> Bool {
         lhs.id == rhs.id && lhs.row == rhs.row && lhs.column == rhs.column
     }

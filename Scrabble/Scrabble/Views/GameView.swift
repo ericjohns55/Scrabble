@@ -49,12 +49,13 @@ struct GameView: View {
                 Button(action: {
                     viewModel.commitTiles()
                 }) {
-                    Text("Commit Tiles")
+                    Text("Submit Word")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 .contentShape(Rectangle())
                 .border(.gray)
                 .padding(10)
+                .disabled(viewModel.wordValidator.placementState != .valid)
             }
             .frame(maxWidth: .infinity, maxHeight: buttonHeight)
             
@@ -67,8 +68,8 @@ struct GameView: View {
             Text("Invalid Words: \(viewModel.wordValidator.currentInvalidWords)")
                 .foregroundStyle(PlacementStatus.getColor(for: viewModel.wordValidator.placementState))
             
-            Text("Total \(viewModel.boardViewModel.tileCount); Placed: \(viewModel.boardViewModel.placedCount); Committed: \(viewModel.boardViewModel.committedCount)")
-                .foregroundStyle(PlacementStatus.getColor(for: viewModel.wordValidator.placementState))
+//            Text("Total \(viewModel.boardViewModel.tileCount); Placed: \(viewModel.boardViewModel.placedCount); Committed: \(viewModel.boardViewModel.committedCount)")
+//                .foregroundStyle(PlacementStatus.getColor(for: viewModel.wordValidator.placementState))
         }
     }
 }

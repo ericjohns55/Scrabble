@@ -16,17 +16,17 @@ class BoardViewModel: ObservableObject {
         }
     }.flatMap { $0 }
     
-    var tileCount: Int {
-        board.count(where: { $0.tile != nil })
-    }
-    
-    var placedCount: Int {
-        board.count(where: { $0.tile?.tileState == .placedByPlayer })
-    }
-    
-    var committedCount: Int {
-        board.count(where: { $0.tile?.tileState == .committedToBoard })
-    }
+//    var tileCount: Int {
+//        board.count(where: { $0.tile != nil })
+//    }
+//    
+//    var placedCount: Int {
+//        board.count(where: { $0.tile?.tileState == .placedByPlayer })
+//    }
+//    
+//    var committedCount: Int {
+//        board.count(where: { $0.tile?.tileState == .committedToBoard })
+//    }
     
     func getBoardSquareByTileId(_ id: UUID) -> BoardSquare? {
         return board.first(where: { $0.tile?.id == id })
@@ -42,6 +42,14 @@ class BoardViewModel: ObservableObject {
     
     func updateTileAtPosition(_ newTile: Tile?, row: Int, col: Int) {
         board.first(where: { $0.row == row && $0.column == col })?.tile = newTile
+    }
+    
+    func isCenterTileFilled() -> Bool {
+        return hasTileAtPosition(row: BoardViewModel.GRID_SIZE / 2, col: BoardViewModel.GRID_SIZE / 2)
+    }
+    
+    func hasCommittedTiles() -> Bool {
+        return board.contains(where: { $0.tile?.tileState == .committedToBoard })
     }
     
     func getWordHorizontal(_ tileId: UUID) -> Word? {

@@ -8,16 +8,16 @@
 import SwiftUI
 
 enum PlacementStatus {
-    case valid, invalid, tooShort, none
+    case valid, invalid, tooShort, none, centerTileEmpty, notConnected, notConsecutive
     
     static func getColor(for status: PlacementStatus) -> Color {
         switch status {
             case .valid:
                 return .green
-            case .invalid:
-                return .red
-            default:
+            case .none:
                 return .blue
+            default:
+                return .red
         }
     }
 }
@@ -58,6 +58,11 @@ class WordValidator: ObservableObject {
         // if they do not all share the same row or column then they must be invalid
         if (!allSameRow && !allSameColumn) {
             updateTileState(.invalid)
+            return
+        }
+        
+        if (!game.boardViewModel.isCenterTileFilled()) {
+            updateTileState(.centerTileEmpty)
             return
         }
         
@@ -127,8 +132,16 @@ class WordValidator: ObservableObject {
                 }
             }
             
-            let validStatus = invalidWords.count > 0 ? PlacementStatus.invalid : PlacementStatus.valid
-            updateTileState(validStatus, validWords: validWords.joined(separator: ", "), invalidWords: invalidWords.joined(separator: ", "))
+            var updatedState: PlacementStatus = .invalid
+            
+            // if the board has committed tiles and we are not connected to them, the state is invalid
+            if (game.boardViewModel.hasCommittedTiles() && !allCreatedWords.contains(where: { $0.connectedToExistingTiles() })) {
+                updatedState = .notConnected
+            } else if (invalidWords.count == 0) {
+                updatedState = .valid
+            }
+            
+            updateTileState(updatedState, validWords: validWords.joined(separator: ", "), invalidWords: invalidWords.joined(separator: ", "))
         } else {
             if (placedTiles.count == 1) {
                 updateTileState(.tooShort)
