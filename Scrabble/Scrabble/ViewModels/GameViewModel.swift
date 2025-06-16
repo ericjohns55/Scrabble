@@ -18,20 +18,27 @@ class GameViewModel: ObservableObject {
     @Published var committedTiles: [Tile] = []
     @Published var tileBag: [Tile] = []
     
+    @Published var totalScore: Int = 0
+    @Published var totalWords: Int = 0
+    @Published var totalMoves: Int = 0
+    
     var boardViewModel: BoardViewModel = BoardViewModel()
     lazy var wordValidator = WordValidator(gameViewModel: self)
     
     let tileSize: CGFloat = 44
     let maxTiles: Int = 7
 
-    init() {
+    @ObservedObject var toastManager: ToastManager
+    init(toastManager: ToastManager) {
+        self.toastManager = toastManager
+        
         populateTileBag()
         drawTiles(maxTiles)
     }
     
     private func populateTileBag() {
         let tileBreakdowns = [
-            TileBreakdown(letter: "?", count: 2, points: 0),
+//            TileBreakdown(letter: "?", count: 2, points: 0), TODO: blank tiles
             TileBreakdown(letter: "A", count: 9, points: 1),
             TileBreakdown(letter: "B", count: 2, points: 4),
             TileBreakdown(letter: "C", count: 2, points: 4),
@@ -150,6 +157,10 @@ class GameViewModel: ObservableObject {
     }
     
     func commitTiles() {
+        totalScore += wordValidator.currentPoints
+        totalWords += wordValidator.wordCount
+        totalMoves += 1
+        
         for (_, currentTile) in playerTiles.enumerated() {
             if (currentTile.tileState == .placedByPlayer) {
                 let indexInHand = playerTiles.firstIndex(of: currentTile)!

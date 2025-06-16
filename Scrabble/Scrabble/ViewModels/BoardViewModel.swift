@@ -16,18 +16,6 @@ class BoardViewModel: ObservableObject {
         }
     }.flatMap { $0 }
     
-//    var tileCount: Int {
-//        board.count(where: { $0.tile != nil })
-//    }
-//    
-//    var placedCount: Int {
-//        board.count(where: { $0.tile?.tileState == .placedByPlayer })
-//    }
-//    
-//    var committedCount: Int {
-//        board.count(where: { $0.tile?.tileState == .committedToBoard })
-//    }
-    
     func getBoardSquareByTileId(_ id: UUID) -> BoardSquare? {
         return board.first(where: { $0.tile?.id == id })
     }

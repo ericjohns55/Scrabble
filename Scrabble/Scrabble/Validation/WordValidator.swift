@@ -25,6 +25,8 @@ enum PlacementStatus {
 class WordValidator: ObservableObject {
     unowned let game: GameViewModel
     
+    @Published var wordCount: Int = 0
+    @Published var currentPoints: Int = 0
     @Published var placementState: PlacementStatus = .none
     @Published var currentValidWords: String = ""
     @Published var currentInvalidWords: String = ""
@@ -119,29 +121,32 @@ class WordValidator: ObservableObject {
         
         if (allCreatedWords.count > 0) {
             // check word
-            var validWords = Set<String>()
-            var invalidWords = Set<String>()
+            var validWords = Set<Word>()
+            var invalidWords = Set<Word>()
             
             for createdWord in allCreatedWords {
-                let calculatedWord = createdWord.getWord()
-                
-                if (wordSet.contains(calculatedWord)) {
-                    validWords.insert(calculatedWord)
+                if (wordSet.contains(createdWord.getWord())) {
+                    validWords.insert(createdWord)
                 } else {
-                    invalidWords.insert(calculatedWord)
+                    invalidWords.insert(createdWord)
                 }
             }
             
             var updatedState: PlacementStatus = .invalid
+            var points: Int = 0
             
             // if the board has committed tiles and we are not connected to them, the state is invalid
             if (game.boardViewModel.hasCommittedTiles() && !allCreatedWords.contains(where: { $0.connectedToExistingTiles() })) {
                 updatedState = .notConnected
             } else if (invalidWords.count == 0) {
                 updatedState = .valid
+                
+                if (validWords.count > 0) {
+                    points = validWords.map { $0.getPoints() }.reduce(0, +)
+                }
             }
             
-            updateTileState(updatedState, validWords: validWords.joined(separator: ", "), invalidWords: invalidWords.joined(separator: ", "))
+            updateTileState(updatedState, validWords: validWords, invalidWords: invalidWords, points: points)
         } else {
             if (placedTiles.count == 1) {
                 updateTileState(.tooShort)
@@ -151,9 +156,17 @@ class WordValidator: ObservableObject {
         }
     }
     
-    private func updateTileState(_ placementStatus: PlacementStatus, validWords: String = "", invalidWords: String = "") {
+    private func updateTileState(_ placementStatus: PlacementStatus, validWords: Set<Word>? = nil, invalidWords: Set<Word>? = nil, points: Int = 0) {
         self.placementState = placementStatus
-        self.currentValidWords = validWords
-        self.currentInvalidWords = invalidWords
+        self.currentPoints = points
+        
+        if (validWords != nil && invalidWords != nil) {
+            self.currentValidWords = validWords!.map { "\($0)"}.joined(separator: ", ")
+            self.currentInvalidWords = invalidWords!.map { "\($0)"}.joined(separator: ", ")
+            self.wordCount = validWords!.count + invalidWords!.count
+        } else {
+            self.currentValidWords = ""
+            self.currentInvalidWords = ""
+        }
     }
 }

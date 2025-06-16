@@ -5,6 +5,7 @@
 //  Created by Eric Johns on 5/22/25.
 //
 
+import AlertToast
 import SwiftUI
 
 class DragManager: ObservableObject {
@@ -15,8 +16,14 @@ class DragManager: ObservableObject {
 }
 
 struct GameView: View {
-    @StateObject private var viewModel = GameViewModel()
+    @EnvironmentObject var toastManager: ToastManager
+    @EnvironmentObject var viewModel: GameViewModel
+    
     @StateObject private var dragManager = DragManager()
+    
+    var textColor: Color {
+        PlacementStatus.getColor(for: viewModel.wordValidator.placementState)
+    }
     
     private let buttonHeight: CGFloat = 72
     
@@ -27,6 +34,27 @@ struct GameView: View {
                 .font(.title)
                 .bold()
                 .padding(.bottom, 8)
+            
+            HStack {
+                Text("Moves: \(viewModel.totalMoves)")
+                    .foregroundStyle(.white)
+                    .font(.title2)
+                    .padding(.bottom, 8)
+                
+                Spacer()
+                
+                Text("Score: \(viewModel.totalScore)")
+                    .foregroundStyle(.white)
+                    .font(.title2)
+                    .padding(.bottom, 8)
+                
+                Spacer()
+                
+                Text("Words: \(viewModel.totalWords)")
+                    .foregroundStyle(.white)
+                    .font(.title2)
+                    .padding(.bottom, 8)
+            }
             
             BoardView(viewModel: viewModel, dragManager: dragManager)
                 .aspectRatio(1, contentMode: .fit)
@@ -56,20 +84,43 @@ struct GameView: View {
                 .border(.gray)
                 .padding(10)
                 .disabled(viewModel.wordValidator.placementState != .valid)
+                
+//                Button(action: {
+//                    toastManager.displayToast(text: "Test", color: .gray, alertType: .error(.red))
+//                }) {
+//                    Text("Redraw")
+//                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+//                }
+//                .contentShape(Rectangle())
+//                .border(.gray)
+//                .padding(10)
+                
+                // NEXT: discard
             }
             .frame(maxWidth: .infinity, maxHeight: buttonHeight)
             
             Text("Tile Placement: \(viewModel.wordValidator.placementState)")
-                .foregroundStyle(PlacementStatus.getColor(for: viewModel.wordValidator.placementState))
+                .foregroundStyle(textColor)
             
             Text("Valid Words: \(viewModel.wordValidator.currentValidWords)")
-                .foregroundStyle(PlacementStatus.getColor(for: viewModel.wordValidator.placementState))
+                .foregroundStyle(textColor)
             
             Text("Invalid Words: \(viewModel.wordValidator.currentInvalidWords)")
-                .foregroundStyle(PlacementStatus.getColor(for: viewModel.wordValidator.placementState))
+                .foregroundStyle(textColor)
             
-//            Text("Total \(viewModel.boardViewModel.tileCount); Placed: \(viewModel.boardViewModel.placedCount); Committed: \(viewModel.boardViewModel.committedCount)")
-//                .foregroundStyle(PlacementStatus.getColor(for: viewModel.wordValidator.placementState))
+            Text("Current Points: \(viewModel.wordValidator.currentPoints)")
+                .foregroundStyle(textColor)
+            
+            Text("Current Words: \(viewModel.wordValidator.wordCount)")
+                .foregroundStyle(textColor)
+        }
+        .toast(isPresenting: $toastManager.showToast,
+               duration: toastManager.toastDuration,
+               tapToDismiss: true) {
+            AlertToast(displayMode: .alert,
+                       type: toastManager.toastType,
+                       title: toastManager.toastText,
+                       style: .style(backgroundColor: toastManager.toastColor))
         }
     }
 }

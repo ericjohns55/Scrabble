@@ -12,11 +12,18 @@ struct TileView: View {
     let size: CGFloat
     
     var body: some View {
-        Text(tile.letter)
-            .font(.title2.bold())
-            .frame(width: size, height: size)
-            .background(tile.tileState != .committedToBoard ? Color.yellow : Color.gray)
-            .cornerRadius(8)
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black))
+        ZStack(alignment: .topTrailing) {
+            Text(tile.letter)
+                .font(.title2.bold())
+                .frame(width: size, height: size)
+                .background(tile.tileState != .committedToBoard ? Color.yellow : Color.gray)
+                .cornerRadius(8)
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black))
+            
+            Text("\(tile.points)")
+                .font(.caption2)
+                .foregroundStyle(Color.white)
+                .padding(4)
+        }
     }
 }
