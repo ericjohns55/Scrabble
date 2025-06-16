@@ -40,6 +40,7 @@ struct GameView: View {
                     .foregroundStyle(.white)
                     .font(.title2)
                     .padding(.bottom, 8)
+                    .padding(.leading, 4)
                 
                 Spacer()
                 
@@ -54,6 +55,7 @@ struct GameView: View {
                     .foregroundStyle(.white)
                     .font(.title2)
                     .padding(.bottom, 8)
+                    .padding(.trailing, 4)
             }
             
             BoardView(viewModel: viewModel, dragManager: dragManager)
@@ -99,20 +101,34 @@ struct GameView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: buttonHeight)
             
-            Text("Tile Placement: \(viewModel.wordValidator.placementState)")
-                .foregroundStyle(textColor)
-            
-            Text("Valid Words: \(viewModel.wordValidator.currentValidWords)")
-                .foregroundStyle(textColor)
-            
-            Text("Invalid Words: \(viewModel.wordValidator.currentInvalidWords)")
-                .foregroundStyle(textColor)
-            
-            Text("Current Points: \(viewModel.wordValidator.currentPoints)")
-                .foregroundStyle(textColor)
-            
-            Text("Current Words: \(viewModel.wordValidator.wordCount)")
-                .foregroundStyle(textColor)
+            VStack {
+                Text(PlacementStatus.getMessage(for: viewModel.wordValidator.placementState))
+                    .font(.title2)
+                    .foregroundStyle(.white)
+                    .bold()
+                
+                if (viewModel.wordValidator.currentValidWords != "") {
+                    Text("Valid Words: \(viewModel.wordValidator.currentValidWords)")
+                        .foregroundStyle(.green)
+                } else {
+                    Text("No valid words present")
+                        .foregroundStyle(textColor)
+                }
+                
+                if (viewModel.wordValidator.currentInvalidWords != "") {
+                    Text("Invalid Words: \(viewModel.wordValidator.currentInvalidWords)")
+                        .foregroundStyle(.red)
+                } else {
+                    Text("No invalid words present")
+                        .foregroundStyle(textColor)
+                }
+                               
+                Text("Current Points: \(viewModel.wordValidator.currentPoints)")
+                    .foregroundStyle(textColor)
+                
+                Text("Current Words: \(viewModel.wordValidator.wordCount)")
+                    .foregroundStyle(textColor)
+            }
         }
         .toast(isPresenting: $toastManager.showToast,
                duration: toastManager.toastDuration,

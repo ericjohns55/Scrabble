@@ -15,9 +15,28 @@ enum PlacementStatus {
             case .valid:
                 return .green
             case .none:
-                return .blue
+                return .white
             default:
                 return .red
+        }
+    }
+    
+    static func getMessage(for status: PlacementStatus) -> String {
+        switch status {
+            case .valid:
+                return "All words are valid"
+            case .invalid:
+                return "Some words are invalid"
+            case .tooShort:
+                return "Word is too short"
+            case .none:
+                return "No tiles are on the board"
+            case .centerTileEmpty:
+                return "Center tile must be filled"
+            case .notConnected:
+                return "Tiles are not connected"
+            case .notConsecutive:
+                return "Tiles cannot have gaps"
         }
     }
 }
@@ -75,15 +94,22 @@ class WordValidator: ObservableObject {
                 // check consecutive rows
                 print("Checking for vertical words in created row...")
                 
+                let placedTilesSorted = placedTiles.sorted(by: { $0.boardPosition!.col < $1.boardPosition!.col })
+                
+                if (!game.boardViewModel.arePlacedTilesConsecutive(placedTilesSorted, wordOrientation: .horizontal)) {
+                    updateTileState(.notConsecutive)
+                    return
+                }
+                
                 // find all words created vertically
-                for placedTile in placedTiles.sorted(by: { $0.boardPosition!.col < $1.boardPosition!.col }) {
+                for placedTile in placedTilesSorted {
                     if let createdWord = game.boardViewModel.getWordVertical(placedTile.id) {
                         allCreatedWords.append(createdWord)
                     }
                 }
                 
                 // find the word created horizontally (guaranteed to only have one)
-                if let createdWord = game.boardViewModel.getWordHorizontal(placedTiles.first!.id) {
+                if let createdWord = game.boardViewModel.getWordHorizontal(placedTilesSorted.first!.id) {
                     allCreatedWords.append(createdWord)
                 } else {
                     print("Could not find horizontally created word")
@@ -94,8 +120,15 @@ class WordValidator: ObservableObject {
                 // check consecutive cols
                 print("Checking for horizontal words in created column...")
                 
+                let placedTilesSorted = placedTiles.sorted(by: { $0.boardPosition!.row < $1.boardPosition!.row })
+                
+                if (!game.boardViewModel.arePlacedTilesConsecutive(placedTilesSorted, wordOrientation: .vertical)) {
+                    updateTileState(.notConsecutive)
+                    return
+                }
+                
                 // find all words created horizontally
-                for placedTile in placedTiles.sorted(by: { $0.boardPosition!.row < $1.boardPosition!.col }) {
+                for placedTile in placedTilesSorted {
                     if let createdWord = game.boardViewModel.getWordHorizontal(placedTile.id) {
                         allCreatedWords.append(createdWord)
                     }
@@ -125,7 +158,8 @@ class WordValidator: ObservableObject {
             var invalidWords = Set<Word>()
             
             for createdWord in allCreatedWords {
-                if (wordSet.contains(createdWord.getWord())) {
+                // lowercased because the WordList resource is in lowercase
+                if (wordSet.contains(createdWord.getWord().lowercased())) {
                     validWords.insert(createdWord)
                 } else {
                     invalidWords.insert(createdWord)
@@ -167,6 +201,7 @@ class WordValidator: ObservableObject {
         } else {
             self.currentValidWords = ""
             self.currentInvalidWords = ""
+            self.wordCount = 0
         }
     }
 }

@@ -40,6 +40,33 @@ class BoardViewModel: ObservableObject {
         return board.contains(where: { $0.tile?.tileState == .committedToBoard })
     }
     
+    func arePlacedTilesConsecutive(_ placedTilesSorted: [Tile], wordOrientation: WordOrientation) -> Bool {
+        if (wordOrientation == .horizontal) {
+            let row = placedTilesSorted.first!.boardPosition!.row
+            let lowestColumn = placedTilesSorted.first!.boardPosition!.col
+            let highestColumn = placedTilesSorted.last!.boardPosition!.col
+            
+            for index in (lowestColumn...highestColumn) {
+                if (!hasTileAtPosition(row: row, col: index)) {
+                    return false
+                }
+            }
+            
+        } else {
+            let column = placedTilesSorted.first!.boardPosition!.col
+            let lowestRow = placedTilesSorted.first!.boardPosition!.row
+            let highestRow = placedTilesSorted.last!.boardPosition!.row
+            
+            for index in (lowestRow...highestRow) {
+                if (!hasTileAtPosition(row: index, col: column)) {
+                    return false
+                }
+            }
+        }
+        
+        return true
+    }
+    
     func getWordHorizontal(_ tileId: UUID) -> Word? {
         guard let startingSquare = getBoardSquareByTileId(tileId) else {
             return nil
