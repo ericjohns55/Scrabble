@@ -67,6 +67,17 @@ struct GameView: View {
             
             HStack {
                 Button(action: {
+                    viewModel.setupGame()
+//                    toastManager.displayToast(text: "Reset game", color: .gray, alertType: .complete(.green))
+                }) {
+                    Text("Reset Game")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .contentShape(Rectangle())
+                .border(.gray)
+                .padding(10)
+                
+                Button(action: {
                     viewModel.shuffleOrRecall()
                 }) {
                     Text(viewModel.canShuffle() ? "Shuffle Tiles" : "Recall Tiles")
@@ -86,16 +97,6 @@ struct GameView: View {
                 .border(.gray)
                 .padding(10)
                 .disabled(viewModel.wordValidator.placementState != .valid)
-                
-//                Button(action: {
-//                    toastManager.displayToast(text: "Test", color: .gray, alertType: .error(.red))
-//                }) {
-//                    Text("Redraw")
-//                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-//                }
-//                .contentShape(Rectangle())
-//                .border(.gray)
-//                .padding(10)
                 
                 // NEXT: discard
             }

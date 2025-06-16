@@ -118,4 +118,10 @@ class BoardViewModel: ObservableObject {
         
         return Word(boardSquares: boardSquareAccumulator, wordOrientation: .vertical)
     }
+    
+    func removeAllTiles() {
+        for boardSquare in board {
+            boardSquare.tile = nil
+        }
+    }
 }
