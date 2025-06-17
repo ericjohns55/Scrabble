@@ -27,3 +27,22 @@ class ToastManager: ObservableObject {
         showToast = true
     }
 }
+
+@MainActor
+class ConfirmationDialogManager: ObservableObject {
+    @Published public var showDialog: Bool = false
+    @Published var displayTitle: Bool = true
+    @Published var confirmAction: () -> Void = { }
+    @Published var cancelAction: () -> Void = { }
+    @Published var message: String = ""
+    
+    func displayDialog(message: String, displayTitle: Bool = true, confirmAction: @escaping () -> Void = { }, cancelAction: @escaping () -> Void = { }) {
+        self.message = message
+        self.displayTitle = displayTitle
+        self.confirmAction = confirmAction
+        self.cancelAction = cancelAction
+        
+        showDialog = true
+    }
+}
+

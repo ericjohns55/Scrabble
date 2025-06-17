@@ -17,6 +17,7 @@ class DragManager: ObservableObject {
 
 struct GameView: View {
     @EnvironmentObject var toastManager: ToastManager
+    @EnvironmentObject var confirmationDialogManager: ConfirmationDialogManager
     @EnvironmentObject var viewModel: GameViewModel
     
     @StateObject private var dragManager = DragManager()
@@ -67,15 +68,17 @@ struct GameView: View {
             
             HStack {
                 Button(action: {
-                    viewModel.setupGame()
-//                    toastManager.displayToast(text: "Reset game", color: .gray, alertType: .complete(.green))
+                    confirmationDialogManager.displayDialog(message: "Are you sure you want to restart?", confirmAction: {
+                        viewModel.setupGame()
+                    })
                 }) {
                     Text("Reset Game")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 .contentShape(Rectangle())
                 .border(.gray)
-                .padding(10)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 10)
                 
                 Button(action: {
                     viewModel.shuffleOrRecall()
@@ -85,7 +88,8 @@ struct GameView: View {
                 }
                 .contentShape(Rectangle())
                 .border(.gray)
-                .padding(10)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 10)
                 
                 Button(action: {
                     viewModel.commitTiles()
@@ -95,7 +99,8 @@ struct GameView: View {
                 }
                 .contentShape(Rectangle())
                 .border(.gray)
-                .padding(10)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 10)
                 .disabled(viewModel.wordValidator.placementState != .valid)
                 
                 // NEXT: discard
@@ -129,6 +134,17 @@ struct GameView: View {
                 
                 Text("Current Words: \(viewModel.wordValidator.wordCount)")
                     .foregroundStyle(textColor)
+            }
+        }
+        .confirmationDialog(confirmationDialogManager.message,
+                            isPresented: $confirmationDialogManager.showDialog,
+                            titleVisibility: confirmationDialogManager.displayTitle ? .visible : .hidden) {
+            Button("Confirm", role: .destructive) {
+                confirmationDialogManager.confirmAction()
+            }
+            
+            Button("Cancel", role: .cancel) {
+                confirmationDialogManager.cancelAction()
             }
         }
         .toast(isPresenting: $toastManager.showToast,
