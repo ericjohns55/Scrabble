@@ -17,7 +17,7 @@ struct DraggableTile: View {
 
     var body: some View {
         GeometryReader { geo in
-            let tileSize = dragManager.boardFrame.width / CGFloat(BoardViewModel.GRID_SIZE)
+            let tileSize = dragManager.boardFrame.width / CGFloat(viewModel.boardViewModel.getGridSize())
             
             TileView(tile: tile, size: tileSize)
                 .offset(dragOffset)

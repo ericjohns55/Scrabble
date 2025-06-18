@@ -9,25 +9,21 @@ import SwiftUI
 
 @main
 struct ScrabbleApp: App {
-    @StateObject private var toastManager: ToastManager
+    @StateObject private var popupManager: PopupManager
     @StateObject private var gameViewModel: GameViewModel
-    @StateObject private var confirmationDialogManager: ConfirmationDialogManager
     
     init() {
-        let toastManager = ToastManager()
-        let confirmationDialogManager = ConfirmationDialogManager()
+        let popupManager = PopupManager()
         
-        _toastManager = StateObject(wrappedValue: toastManager)
-        _confirmationDialogManager = StateObject(wrappedValue: confirmationDialogManager)
-        _gameViewModel = StateObject(wrappedValue: GameViewModel(toastManager: toastManager))
+        _popupManager = StateObject(wrappedValue: popupManager)
+        _gameViewModel = StateObject(wrappedValue: GameViewModel(popupManager: popupManager))
     }
     
     var body: some Scene {
         WindowGroup {
             GameView()
-                .environmentObject(toastManager)
+                .environmentObject(popupManager)
                 .environmentObject(gameViewModel)
-                .environmentObject(confirmationDialogManager)
         }
     }
 }

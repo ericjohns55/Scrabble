@@ -14,12 +14,19 @@ struct BoardView: View {
     @State private var lastOffset: CGSize = .zero
     @State private var isZoomedIn = false
 
-    let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: BoardViewModel.GRID_SIZE)
+    let columns: Array<GridItem>
 
+    init(viewModel: GameViewModel, dragManager: DragManager) {
+        self.viewModel = viewModel
+        self.dragManager = dragManager
+        
+        columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: viewModel.boardViewModel.getGridSize())
+    }
+    
     var body: some View {
         GeometryReader { geometry in
             let boardSize = min(geometry.size.width, geometry.size.height)
-            let tileSize = dragManager.boardFrame.width / CGFloat(BoardViewModel.GRID_SIZE)
+            let tileSize = dragManager.boardFrame.width / CGFloat(viewModel.boardViewModel.getGridSize())
             
             let snapZoomGesture = MagnificationGesture()
                 .onEnded { value in

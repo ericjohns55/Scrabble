@@ -16,8 +16,7 @@ class DragManager: ObservableObject {
 }
 
 struct GameView: View {
-    @EnvironmentObject var toastManager: ToastManager
-    @EnvironmentObject var confirmationDialogManager: ConfirmationDialogManager
+    @EnvironmentObject var popupManager: PopupManager
     @EnvironmentObject var viewModel: GameViewModel
     
     @StateObject private var dragManager = DragManager()
@@ -35,6 +34,17 @@ struct GameView: View {
                 .font(.title)
                 .bold()
                 .padding(.bottom, 8)
+                .onTapGesture {
+                    popupManager.displayActionSheet(title: "Scrabble Board", message: "Select a board type to load", buttons: [
+                        .default(Text("Diamond 9x9")) { viewModel.changeBoard(newBoardIdentifier: .diamond9) },
+                        .default(Text("Diamond 11x11")) { viewModel.changeBoard(newBoardIdentifier: .diamond11) },
+                        .default(Text("Diamond 13x13")) { viewModel.changeBoard(newBoardIdentifier: .diamond13) },
+                        .default(Text("X 9x9")) { viewModel.changeBoard(newBoardIdentifier: .x9) },
+                        .default(Text("X 11x11")) { viewModel.changeBoard(newBoardIdentifier: .x11) },
+                        .default(Text("X 13x13")) { viewModel.changeBoard(newBoardIdentifier: .x13) },
+                        .cancel()
+                    ])
+                }
             
             HStack {
                 Text("Moves: \(viewModel.totalMoves)")
@@ -68,8 +78,10 @@ struct GameView: View {
             
             HStack {
                 Button(action: {
-                    confirmationDialogManager.displayDialog(message: "Are you sure you want to restart?", confirmAction: {
+                    popupManager.displayConfirmationDialog(message: "Are you sure you want to restart?", confirmAction: {
                         viewModel.setupGame()
+                    }, cancelAction: {
+                        viewModel.changeBoard(newBoardIdentifier: .diamond13)
                     })
                 }) {
                     Text("Reset Game")
@@ -136,24 +148,29 @@ struct GameView: View {
                     .foregroundStyle(textColor)
             }
         }
-        .confirmationDialog(confirmationDialogManager.message,
-                            isPresented: $confirmationDialogManager.showDialog,
-                            titleVisibility: confirmationDialogManager.displayTitle ? .visible : .hidden) {
+        .confirmationDialog(popupManager.confirmationDialogOptions.message,
+                            isPresented: $popupManager.showConfirmationDialog,
+                            titleVisibility: popupManager.confirmationDialogOptions.displayTitle ? .visible : .hidden) {
             Button("Confirm", role: .destructive) {
-                confirmationDialogManager.confirmAction()
+                popupManager.confirmationDialogOptions.confirmAction()
             }
             
             Button("Cancel", role: .cancel) {
-                confirmationDialogManager.cancelAction()
+                popupManager.confirmationDialogOptions.cancelAction()
             }
         }
-        .toast(isPresenting: $toastManager.showToast,
-               duration: toastManager.toastDuration,
+        .actionSheet(isPresented: $popupManager.showActionSheet) {
+            ActionSheet(title: Text(popupManager.actionSheetOptions.title),
+                        message: Text(popupManager.actionSheetOptions.message),
+                        buttons: popupManager.actionSheetOptions.buttons)
+        }
+        .toast(isPresenting: $popupManager.showToast,
+               duration: popupManager.toastOptions.toastDuration,
                tapToDismiss: true) {
             AlertToast(displayMode: .alert,
-                       type: toastManager.toastType,
-                       title: toastManager.toastText,
-                       style: .style(backgroundColor: toastManager.toastColor))
+                       type: popupManager.toastOptions.toastType,
+                       title: popupManager.toastOptions.toastText,
+                       style: .style(backgroundColor: popupManager.toastOptions.toastColor))
         }
     }
 }

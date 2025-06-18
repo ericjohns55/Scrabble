@@ -8,13 +8,44 @@
 import SwiftUI
 
 class BoardViewModel: ObservableObject {
-    public static let GRID_SIZE: Int = 11
+    private static let DEFAULT_BOARD_IDENTIFIER: BoardIdentifier = .diamond11
+    private static let DEFAULT_BOARD_SIZE = BoardIdentifier.getBoardSize(DEFAULT_BOARD_IDENTIFIER)
     
-    @Published var board: [BoardSquare] = (0..<GRID_SIZE).map { row in
-        (0..<GRID_SIZE).map { column in
-            BoardSquare(row: row, column: column, boardSize: GRID_SIZE)
+    @Published var board: [BoardSquare] = (0..<DEFAULT_BOARD_SIZE).map { row in
+        (0..<DEFAULT_BOARD_SIZE).map { column in
+            BoardSquare(row: row, column: column, boardIdentifier: DEFAULT_BOARD_IDENTIFIER)
         }
     }.flatMap { $0 }
+    
+    private var boardIdentifier: BoardIdentifier = DEFAULT_BOARD_IDENTIFIER
+    private var boardSize: Int = 0
+    
+    init() {
+        setupBoard(boardIdentifier: BoardViewModel.DEFAULT_BOARD_IDENTIFIER)
+    }
+    
+    init(boardIdentifier: BoardIdentifier) {
+        setupBoard(boardIdentifier: boardIdentifier)
+    }
+    
+    public func setupBoard(boardIdentifier: BoardIdentifier) {
+        self.boardIdentifier = boardIdentifier
+        self.boardSize = BoardIdentifier.getBoardSize(boardIdentifier)
+        
+        self.board = (0..<boardSize).map { row in
+            (0..<boardSize).map { column in
+                BoardSquare(row: row, column: column, boardIdentifier: boardIdentifier)
+            }
+        }.flatMap { $0 }
+    }
+    
+    func getBoardIdentifier() -> BoardIdentifier {
+        return self.boardIdentifier
+    }
+    
+    func getGridSize() -> Int {
+        return self.boardSize
+    }
     
     func getBoardSquareByTileId(_ id: UUID) -> BoardSquare? {
         return board.first(where: { $0.tile?.id == id })
@@ -33,7 +64,7 @@ class BoardViewModel: ObservableObject {
     }
     
     func isCenterTileFilled() -> Bool {
-        return hasTileAtPosition(row: BoardViewModel.GRID_SIZE / 2, col: BoardViewModel.GRID_SIZE / 2)
+        return hasTileAtPosition(row: boardSize / 2, col: boardSize / 2)
     }
     
     func hasCommittedTiles() -> Bool {

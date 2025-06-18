@@ -58,10 +58,15 @@ class GameViewModel: ObservableObject {
     let tileSize: CGFloat = 44
     let maxTiles: Int = 7
 
-    @ObservedObject var toastManager: ToastManager
-    init(toastManager: ToastManager) {
-        self.toastManager = toastManager
+    @ObservedObject var popupManager: PopupManager
+    init(popupManager: PopupManager) {
+        self.popupManager = popupManager
         self.setupGame()
+    }
+    
+    func changeBoard(newBoardIdentifier: BoardIdentifier) {
+        boardViewModel.setupBoard(boardIdentifier: newBoardIdentifier)
+        setupGame()
     }
     
     public func setupGame() {
@@ -113,7 +118,7 @@ class GameViewModel: ObservableObject {
 //        print("DROP POINT: \(dropPoint)")
 //        print("IN BOUNDS: \(dragManager.boardFrame.contains(dropPoint))")
 
-        let tileSize = dragManager.boardFrame.width / CGFloat(BoardViewModel.GRID_SIZE)
+        let tileSize = dragManager.boardFrame.width / CGFloat(boardViewModel.getGridSize())
         let col = Int(dropPoint.x / tileSize)
         let row = Int(dropPoint.y / tileSize)
         
@@ -126,7 +131,7 @@ class GameViewModel: ObservableObject {
             }
             
             var tileToUpdate = playerTiles[index]
-            if row >= 0, row < BoardViewModel.GRID_SIZE, col >= 0, col < BoardViewModel.GRID_SIZE {
+            if row >= 0, row < boardViewModel.getGridSize(), col >= 0, col < boardViewModel.getGridSize() {
                 tileToUpdate.boardPosition = BoardPosition(row: row, col: col)
                 tileToUpdate.offset = .zero
                 tileToUpdate.tileState = .placedByPlayer
