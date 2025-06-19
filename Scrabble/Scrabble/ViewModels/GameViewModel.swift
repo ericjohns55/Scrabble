@@ -196,9 +196,36 @@ class GameViewModel: ObservableObject {
             }
         }
         
+        updateCornerRadii()
+        
         let numTilesToDraw = maxTiles - playerTiles.count
         drawTiles(numTilesToDraw)
         
         wordValidator.updateTileState()
+    }
+    
+    func updateCornerRadii() {
+        for index in committedTiles.indices {
+            var committedTile = committedTiles[index]
+            
+            guard let boardPosition = committedTile.boardPosition, committedTile.tileState == .committedToBoard else { continue }
+            
+            let currentRow = boardPosition.row
+            let currentColumn = boardPosition.col
+            
+            let hasUpperTile = boardViewModel.hasTileAtPosition(row: currentRow - 1, col: currentColumn)
+            let hasLeftTile = boardViewModel.hasTileAtPosition(row: currentRow, col: currentColumn - 1)
+            let hasLowerTile = boardViewModel.hasTileAtPosition(row: currentRow + 1, col: currentColumn)
+            let hasRightTile = boardViewModel.hasTileAtPosition(row: currentRow, col: currentColumn + 1)
+            
+            committedTile.cornerRadii = CornerRadii(
+                topLeft: hasUpperTile || hasLeftTile,
+                topRight: hasUpperTile || hasRightTile,
+                bottomLeft: hasLowerTile || hasLeftTile,
+                bottomRight: hasLowerTile || hasRightTile
+            )
+            
+            committedTiles[index] = committedTile
+        }
     }
 }
