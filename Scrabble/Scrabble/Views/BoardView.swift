@@ -7,6 +7,22 @@
 
 import SwiftUI
 
+struct GridFrame: Shape {
+    var cornerRadius: CGFloat
+    var lineWidth: CGFloat
+    
+    func path(in rect: CGRect) -> Path {
+        let insectRectangle = rect.insetBy(dx: lineWidth, dy: lineWidth)
+        
+        var path = Path()
+        path.addRect(rect)
+        path.addPath(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .path(in: insectRectangle))
+        
+        return path
+    }
+}
+
 struct BoardView: View {
     @ObservedObject var viewModel: GameViewModel
     @ObservedObject var dragManager: DragManager
@@ -14,6 +30,8 @@ struct BoardView: View {
     @State private var lastOffset: CGSize = .zero
     @State private var isZoomedIn = false
 
+    let FRAME_COLOR: Color = .black
+    
     let columns: Array<GridItem>
 
     init(viewModel: GameViewModel, dragManager: DragManager) {
@@ -64,16 +82,21 @@ struct BoardView: View {
             ZStack(alignment: .topLeading) {
                 LazyVGrid(columns: columns, spacing: 0) {
                     ForEach($viewModel.boardViewModel.board) { $boardSquare in
-                        Rectangle()
-                            .stroke(Color.gray.opacity(0.5), lineWidth: 0.5)
-                            .aspectRatio(1, contentMode: .fit)
-                            .background(TileType.getTileColor(boardSquare.tileType))
-                            .overlay(
-                                Text(TileType.getTileText(boardSquare.tileType))
-                                    .font(.caption)
-                                    .bold()
-                                    .foregroundColor(.white)
-                            )
+                        ZStack {
+                            Rectangle()
+                                .stroke(FRAME_COLOR, lineWidth: 0.5)
+                                .aspectRatio(1, contentMode: .fit)
+                                .background(TileType.getTileColor(boardSquare.tileType))
+                                .overlay(
+                                    Text(TileType.getTileText(boardSquare.tileType))
+                                        .font(.caption)
+                                        .bold()
+                                        .foregroundColor(.white)
+                                )
+                            
+                            GridFrame(cornerRadius: 8, lineWidth: 1)
+                                .fill(FRAME_COLOR, style: FillStyle(eoFill: true))
+                        }
                     }
                 }
                             

@@ -28,7 +28,7 @@ enum TileType: Int {
             case .startingSquare:
                 return .purple
             case .empty:
-                return .black
+                return Color(red: 0.12, green: 0.12, blue: 0.12)
         }
     }
     
