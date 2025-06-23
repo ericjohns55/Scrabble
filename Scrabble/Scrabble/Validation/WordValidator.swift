@@ -42,33 +42,19 @@ enum PlacementStatus {
 }
 
 class WordValidator: ObservableObject {
-    unowned let game: GameViewModel
+    let boardState: BoardState
+    let game: GameViewModel
+    let wordSet: Set<String>
     
-    @Published var wordCount: Int = 0
-    @Published var currentPoints: Int = 0
-    @Published var placementState: PlacementStatus = .none
-    @Published var currentValidWords: String = ""
-    @Published var currentInvalidWords: String = ""
-    
-    private var wordSet: Set<String> = []
-    
-    init(gameViewModel: GameViewModel) {
+    init(gameViewModel: GameViewModel, boardState: BoardState, wordSet: Set<String>) {
         self.game = gameViewModel
-        
-        print("Loading all words from resources...")
-        
-        if let wordSetPath = Bundle.main.path(forResource: "WordList", ofType: "txt") {
-            if let fileContents = try? String(contentsOfFile: wordSetPath, encoding: .utf8) {
-                wordSet = Set(fileContents.components(separatedBy: .newlines).filter { !$0.isEmpty })
-            }
-        }
-        
-        print("Loaded \(wordSet.count) words")
+        self.boardState = boardState
+        self.wordSet = wordSet
     }
         
     func updateTileState() {
         if (game.playerTiles.allSatisfy { $0.tileState == .inPlayerHand }) {
-            updateTileState(.none)
+            boardState.updateTileState(.none)
             return
         }
         
@@ -78,12 +64,12 @@ class WordValidator: ObservableObject {
         
         // if they do not all share the same row or column then they must be invalid
         if (!allSameRow && !allSameColumn) {
-            updateTileState(.invalid)
+            boardState.updateTileState(.invalid)
             return
         }
         
-        if (!game.boardViewModel.isCenterTileFilled()) {
-            updateTileState(.centerTileEmpty)
+        if (!game.boardManager.isCenterTileFilled()) {
+            boardState.updateTileState(.centerTileEmpty)
             return
         }
         
@@ -96,20 +82,20 @@ class WordValidator: ObservableObject {
                 
                 let placedTilesSorted = placedTiles.sorted(by: { $0.boardPosition!.col < $1.boardPosition!.col })
                 
-                if (!game.boardViewModel.arePlacedTilesConsecutive(placedTilesSorted, wordOrientation: .horizontal)) {
-                    updateTileState(.notConsecutive)
+                if (!game.boardManager.arePlacedTilesConsecutive(placedTilesSorted, wordOrientation: .horizontal)) {
+                    boardState.updateTileState(.notConsecutive)
                     return
                 }
                 
                 // find all words created vertically
                 for placedTile in placedTilesSorted {
-                    if let createdWord = game.boardViewModel.getWordVertical(placedTile.id) {
+                    if let createdWord = game.boardManager.getWordVertical(placedTile.id) {
                         allCreatedWords.append(createdWord)
                     }
                 }
                 
                 // find the word created horizontally (guaranteed to only have one)
-                if let createdWord = game.boardViewModel.getWordHorizontal(placedTilesSorted.first!.id) {
+                if let createdWord = game.boardManager.getWordHorizontal(placedTilesSorted.first!.id) {
                     allCreatedWords.append(createdWord)
                 } else {
                     print("Could not find horizontally created word")
@@ -122,19 +108,19 @@ class WordValidator: ObservableObject {
                 
                 let placedTilesSorted = placedTiles.sorted(by: { $0.boardPosition!.row < $1.boardPosition!.row })
                 
-                if (!game.boardViewModel.arePlacedTilesConsecutive(placedTilesSorted, wordOrientation: .vertical)) {
-                    updateTileState(.notConsecutive)
+                if (!game.boardManager.arePlacedTilesConsecutive(placedTilesSorted, wordOrientation: .vertical)) {
+                    boardState.updateTileState(.notConsecutive)
                     return
                 }
                 
                 // find all words created horizontally
                 for placedTile in placedTilesSorted {
-                    if let createdWord = game.boardViewModel.getWordHorizontal(placedTile.id) {
+                    if let createdWord = game.boardManager.getWordHorizontal(placedTile.id) {
                         allCreatedWords.append(createdWord)
                     }
                 }
                 
-                if let createdWord = game.boardViewModel.getWordVertical(placedTiles.first!.id) {
+                if let createdWord = game.boardManager.getWordVertical(placedTiles.first!.id) {
                     allCreatedWords.append(createdWord)
                 } else {
                     print("Could not find vertically created word")
@@ -143,11 +129,11 @@ class WordValidator: ObservableObject {
         } else {
             let placedTileId = placedTiles.first!.id
             
-            if let horizontalWord = game.boardViewModel.getWordHorizontal(placedTileId) {
+            if let horizontalWord = game.boardManager.getWordHorizontal(placedTileId) {
                 allCreatedWords.append(horizontalWord)
             }
             
-            if let verticalWord = game.boardViewModel.getWordVertical(placedTileId) {
+            if let verticalWord = game.boardManager.getWordVertical(placedTileId) {
                 allCreatedWords.append(verticalWord)
             }
         }
@@ -170,7 +156,7 @@ class WordValidator: ObservableObject {
             var points: Int = 0
             
             // if the board has committed tiles and we are not connected to them, the state is invalid
-            if (game.boardViewModel.hasCommittedTiles() && !allCreatedWords.contains(where: { $0.connectedToExistingTiles() })) {
+            if (game.boardManager.hasCommittedTiles() && !allCreatedWords.contains(where: { $0.connectedToExistingTiles() })) {
                 updatedState = .notConnected
             } else if (invalidWords.count == 0) {
                 updatedState = .valid
@@ -180,28 +166,13 @@ class WordValidator: ObservableObject {
                 }
             }
             
-            updateTileState(updatedState, validWords: validWords, invalidWords: invalidWords, points: points)
+            boardState.updateTileState(updatedState, validWords: validWords, invalidWords: invalidWords, points: points)
         } else {
             if (placedTiles.count == 1) {
-                updateTileState(.tooShort)
+                boardState.updateTileState(.tooShort)
             } else {
-                updateTileState(.invalid)
+                boardState.updateTileState(.invalid)
             }
-        }
-    }
-    
-    private func updateTileState(_ placementStatus: PlacementStatus, validWords: Set<Word>? = nil, invalidWords: Set<Word>? = nil, points: Int = 0) {
-        self.placementState = placementStatus
-        self.currentPoints = points
-        
-        if (validWords != nil && invalidWords != nil) {
-            self.currentValidWords = validWords!.map { "\($0)"}.joined(separator: ", ")
-            self.currentInvalidWords = invalidWords!.map { "\($0)"}.joined(separator: ", ")
-            self.wordCount = validWords!.count + invalidWords!.count
-        } else {
-            self.currentValidWords = ""
-            self.currentInvalidWords = ""
-            self.wordCount = 0
         }
     }
 }

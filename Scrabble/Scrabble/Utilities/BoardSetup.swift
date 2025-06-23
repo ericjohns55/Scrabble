@@ -5,6 +5,8 @@
 //  Created by Eric Johns on 6/17/25.
 //
 
+import UIKit
+
 enum BoardIdentifier {
     case diamond9, diamond11, diamond13, x9, x11, x13
     
@@ -16,6 +18,40 @@ enum BoardIdentifier {
                 return 11
             case .diamond13, .x13:
                 return 13
+        }
+    }
+    
+    static func getLabel(_ identifier: BoardIdentifier) -> String {
+        switch identifier {
+            case .diamond9:
+                return "Diamond 9x9"
+            case .x9:
+                return "X 9x9"
+            case .diamond11:
+                return "Diamond 11x11"
+            case .x11:
+                return "X 11x11"
+            case .diamond13:
+                return "Diamond 13x13"
+            case .x13:
+                return "X 13x13"
+        }
+    }
+    
+    static func getImage(_ identifier: BoardIdentifier) -> UIImage {
+        switch identifier {
+            case .diamond9:
+                return UIImage(named: "diamond9")!
+            case .x9:
+                return UIImage(named: "x9")!
+            case .diamond11:
+                return UIImage(named: "diamond11")!
+            case .x11:
+                return UIImage(named: "x11")!
+            case .diamond13:
+                return UIImage(named: "diamond13")!
+            case .x13:
+                return UIImage(named: "x13")!
         }
     }
 }

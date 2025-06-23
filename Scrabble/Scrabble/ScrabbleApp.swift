@@ -9,21 +9,16 @@ import SwiftUI
 
 @main
 struct ScrabbleApp: App {
-    @StateObject private var popupManager: PopupManager
-    @StateObject private var gameViewModel: GameViewModel
+    @StateObject private var appViewModel: AppViewModel
     
     init() {
-        let popupManager = PopupManager()
-        
-        _popupManager = StateObject(wrappedValue: popupManager)
-        _gameViewModel = StateObject(wrappedValue: GameViewModel(popupManager: popupManager))
+        _appViewModel = StateObject(wrappedValue: AppViewModel())
     }
     
     var body: some Scene {
         WindowGroup {
-            GameView()
-                .environmentObject(popupManager)
-                .environmentObject(gameViewModel)
+            MainMenu()
+                .environmentObject(appViewModel)
         }
     }
 }

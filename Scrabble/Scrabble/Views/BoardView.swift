@@ -38,13 +38,13 @@ struct BoardView: View {
         self.viewModel = viewModel
         self.dragManager = dragManager
         
-        columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: viewModel.boardViewModel.getGridSize())
+        columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: viewModel.boardManager.getGridSize())
     }
     
     var body: some View {
         GeometryReader { geometry in
             let boardSize = min(geometry.size.width, geometry.size.height)
-            let tileSize = dragManager.boardFrame.width / CGFloat(viewModel.boardViewModel.getGridSize())
+            let tileSize = dragManager.boardFrame.width / CGFloat(viewModel.boardManager.getGridSize())
             
             let snapZoomGesture = MagnificationGesture()
                 .onEnded { value in
@@ -81,7 +81,7 @@ struct BoardView: View {
             
             ZStack(alignment: .topLeading) {
                 LazyVGrid(columns: columns, spacing: 0) {
-                    ForEach($viewModel.boardViewModel.board) { $boardSquare in
+                    ForEach(viewModel.boardManager.board) { boardSquare in
                         ZStack {
                             Rectangle()
                                 .stroke(FRAME_COLOR, lineWidth: 0.5)

@@ -13,6 +13,13 @@ struct TileBreakdown {
     var points: Int
 }
 
+class GameStats: ObservableObject {
+    var score: Int = 0
+    var words: Int = 0
+    var moves: Int = 0
+    var tiles: Int = 0
+}
+
 class GameViewModel: ObservableObject {
     private let tileBreakdowns = [
 //            TileBreakdown(letter: "?", count: 2, points: 0), TODO: blank tiles
@@ -48,29 +55,22 @@ class GameViewModel: ObservableObject {
     @Published var committedTiles: [Tile] = []
     @Published var tileBag: [Tile] = []
     
-    @Published var totalScore: Int = 0
-    @Published var totalWords: Int = 0
-    @Published var totalMoves: Int = 0
+    @Published var gameStats = GameStats()
     
-    var boardViewModel: BoardViewModel = BoardViewModel()
-    lazy var wordValidator = WordValidator(gameViewModel: self)
+    lazy var wordValidator = WordValidator(gameViewModel: self, boardState: boardState, wordSet: wordSet)
+    let boardManager: BoardViewModel
+    let boardState: BoardState
+    let wordSet: Set<String>
     
     let tileSize: CGFloat = 44
     let maxTiles: Int = 7
 
-    @ObservedObject var popupManager: PopupManager
-    init(popupManager: PopupManager) {
-        self.popupManager = popupManager
-        self.setupGame()
-    }
-    
-    func changeBoard(newBoardIdentifier: BoardIdentifier) {
-        boardViewModel.setupBoard(boardIdentifier: newBoardIdentifier)
-        setupGame()
-    }
-    
-    public func setupGame() {
-        boardViewModel.removeAllTiles()
+    init(boardIdentifier: BoardIdentifier, boardState: BoardState, wordSet: Set<String>) {
+        self.boardManager = BoardViewModel(boardIdentifier: boardIdentifier)
+        self.boardState = boardState
+        self.wordSet = wordSet
+        
+        boardManager.removeAllTiles()
         
         committedTiles.removeAll()
         playerTiles.removeAll()
@@ -78,10 +78,6 @@ class GameViewModel: ObservableObject {
         
         populateTileBag()
         drawTiles(maxTiles)
-        
-        totalScore = 0
-        totalWords = 0
-        totalMoves = 0
         
         wordValidator.updateTileState()
     }
@@ -118,7 +114,7 @@ class GameViewModel: ObservableObject {
 //        print("DROP POINT: \(dropPoint)")
 //        print("IN BOUNDS: \(dragManager.boardFrame.contains(dropPoint))")
 
-        let tileSize = dragManager.boardFrame.width / CGFloat(boardViewModel.getGridSize())
+        let tileSize = dragManager.boardFrame.width / CGFloat(boardManager.getGridSize())
         let col = Int(dropPoint.x / tileSize)
         let row = Int(dropPoint.y / tileSize)
         
@@ -126,22 +122,22 @@ class GameViewModel: ObservableObject {
                         ?? committedTiles.firstIndex(where: { $0.boardPosition?.row == row && $0.boardPosition?.col == col})
         
         if (existingTile == nil) {
-            if let currentBoardSquare = boardViewModel.getBoardSquareByTileId(tileID) {
+            if let currentBoardSquare = boardManager.getBoardSquareByTileId(tileID) {
                 currentBoardSquare.tile = nil
             }
             
             var tileToUpdate = playerTiles[index]
-            if row >= 0, row < boardViewModel.getGridSize(), col >= 0, col < boardViewModel.getGridSize() {
+            if row >= 0, row < boardManager.getGridSize(), col >= 0, col < boardManager.getGridSize() {
                 tileToUpdate.boardPosition = BoardPosition(row: row, col: col)
                 tileToUpdate.offset = .zero
                 tileToUpdate.tileState = .placedByPlayer
                 
-                boardViewModel.updateTileAtPosition(tileToUpdate, row: row, col: col)
+                boardManager.updateTileAtPosition(tileToUpdate, row: row, col: col)
             } else {
                 tileToUpdate.boardPosition = nil // tile returns to rack
                 tileToUpdate.tileState = .inPlayerHand
                 
-                boardViewModel.updateTileAtPosition(nil, row: row, col: col)
+                boardManager.updateTileAtPosition(nil, row: row, col: col)
             }
             
             playerTiles[index] = tileToUpdate
@@ -166,7 +162,7 @@ class GameViewModel: ObservableObject {
                     playerTiles[tileIndex].offset = .zero
                     playerTiles[tileIndex].tileState = .inPlayerHand
                     
-                    if let currentBoardSquare = boardViewModel.getBoardSquareByTileId(currentTile.id) {
+                    if let currentBoardSquare = boardManager.getBoardSquareByTileId(currentTile.id) {
                         currentBoardSquare.tile = nil
                     }
                 }
@@ -177,9 +173,9 @@ class GameViewModel: ObservableObject {
     }
     
     func commitTiles() {
-        totalScore += wordValidator.currentPoints
-        totalWords += wordValidator.wordCount
-        totalMoves += 1
+        gameStats.score += boardState.currentPoints
+        gameStats.words += boardState.wordCount
+        gameStats.moves += 1
         
         for (_, currentTile) in playerTiles.enumerated() {
             if (currentTile.tileState == .placedByPlayer) {
@@ -187,10 +183,11 @@ class GameViewModel: ObservableObject {
                 
                 var tileToUpdate = playerTiles.remove(at: indexInHand)
                 tileToUpdate.tileState = .committedToBoard
+                gameStats.tiles += 1
                 
                 committedTiles.append(tileToUpdate)
                 
-                if let currentBoardSquare = boardViewModel.getBoardSquareByTileId(currentTile.id) {
+                if let currentBoardSquare = boardManager.getBoardSquareByTileId(currentTile.id) {
                     currentBoardSquare.tile = tileToUpdate
                 }
             }
@@ -213,10 +210,10 @@ class GameViewModel: ObservableObject {
             let currentRow = boardPosition.row
             let currentColumn = boardPosition.col
             
-            let hasUpperTile = boardViewModel.hasTileAtPosition(row: currentRow - 1, col: currentColumn)
-            let hasLeftTile = boardViewModel.hasTileAtPosition(row: currentRow, col: currentColumn - 1)
-            let hasLowerTile = boardViewModel.hasTileAtPosition(row: currentRow + 1, col: currentColumn)
-            let hasRightTile = boardViewModel.hasTileAtPosition(row: currentRow, col: currentColumn + 1)
+            let hasUpperTile = boardManager.hasTileAtPosition(row: currentRow - 1, col: currentColumn)
+            let hasLeftTile = boardManager.hasTileAtPosition(row: currentRow, col: currentColumn - 1)
+            let hasLowerTile = boardManager.hasTileAtPosition(row: currentRow + 1, col: currentColumn)
+            let hasRightTile = boardManager.hasTileAtPosition(row: currentRow, col: currentColumn + 1)
             
             committedTile.cornerRadii = CornerRadii(
                 topLeft: hasUpperTile || hasLeftTile,

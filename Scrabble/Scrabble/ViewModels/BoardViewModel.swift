@@ -19,11 +19,7 @@ class BoardViewModel: ObservableObject {
     
     private var boardIdentifier: BoardIdentifier = DEFAULT_BOARD_IDENTIFIER
     private var boardSize: Int = 0
-    
-    init() {
-        setupBoard(boardIdentifier: BoardViewModel.DEFAULT_BOARD_IDENTIFIER)
-    }
-    
+        
     init(boardIdentifier: BoardIdentifier) {
         setupBoard(boardIdentifier: boardIdentifier)
     }

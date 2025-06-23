@@ -126,7 +126,7 @@ struct TileRackView: View {
 
 extension DragGesture.Value {
     func locationInViewGlobal(in geo: GeometryProxy) -> CGPoint {
-        let viewOrigin = geo.frame(in: .global).origin
+        let viewOrigin = geo.frame(in: .named("boardSpace")).origin
         return CGPoint(
             x: viewOrigin.x + self.location.x,
             y: viewOrigin.y + self.location.y
