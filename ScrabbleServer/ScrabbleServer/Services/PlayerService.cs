@@ -7,7 +7,8 @@ using ScrabbleServer.Data.Exceptions;
 using ScrabbleServer.Data.Extensions.ModelExtensions;
 using ScrabbleServer.Data.Models.DatabaseModels;
 using ScrabbleServer.Data.Models.DTOs;
-using ScrabbleServer.Data.Web.Payloads;
+using ScrabbleServer.Data.Web.Models.Types;
+using ScrabbleServer.Data.Web.Models.Payloads;
 using ScrabbleServer.Utilities;
 
 namespace ScrabbleServer.Services;
@@ -58,16 +59,22 @@ public class PlayerService
     {
         var user = await _scrabbleContext.Players
             .FirstOrDefaultAsync(player => player.Username == credentialsPayload.Username
-                                           && player.Password == Crytography.ComputeHash(credentialsPayload.Password));
+                                           && player.Password == Cryptography.ComputeHash(credentialsPayload.Password));
 
         if (user == null)
         {
             throw new AuthenticationException("Could not login.");
         }
-        
+
+        return GenerateTokens(user.ToDTO());
+    }
+
+    public TokensPayload GenerateTokens(PlayerDTO playerDto)
+    {
         return new TokensPayload()
         {
-            AuthenticationToken = Crytography.CreateJwtFromUser(user.ToDTO())
+            AccessToken = Cryptography.CreateJwtFromUser(playerDto, TokenType.Access),
+            RefreshToken = Cryptography.CreateJwtFromUser(playerDto, TokenType.Refresh)
         };
     }
 
@@ -102,7 +109,7 @@ public class PlayerService
         {
             Uuid = Guid.NewGuid(),
             Username = credentialsPayload.Username,
-            Password = Crytography.ComputeHash(credentialsPayload.Password),
+            Password = Cryptography.ComputeHash(credentialsPayload.Password),
             ProfilePicture = null,
             CreatedDate = DateTime.UtcNow,
             UpdatedDate = DateTime.UtcNow

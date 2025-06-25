@@ -1,7 +1,7 @@
-namespace ScrabbleServer.Data.Web.Payloads;
+namespace ScrabbleServer.Data.Web.Models.Payloads;
 
 public class TokensPayload
 {
-    public string AuthenticationToken { get; init; }
+    public string AccessToken { get; init; }
     public string RefreshToken { get; init; }
 }

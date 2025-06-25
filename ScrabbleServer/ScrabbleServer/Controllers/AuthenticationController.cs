@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ScrabbleServer.Data.Models.DTOs;
 using ScrabbleServer.Data.Web;
-using ScrabbleServer.Data.Web.Payloads;
+using ScrabbleServer.Data.Web.Attributes;
+using ScrabbleServer.Data.Web.Models.Payloads;
+using ScrabbleServer.Data.Web.Models.Types;
 using ScrabbleServer.Services;
 
 namespace ScrabbleServer.Controllers;
@@ -44,5 +46,18 @@ public class AuthenticationController : ScrabbleBaseController
     public async Task<IActionResult> Register([FromBody] CredentialsPayload credentialsPayload)
     {
         return Ok(await ExecuteToScrabbleResponseAsync(() => _playerService.RegisterPlayer(credentialsPayload)));
+    }
+
+    [HttpPost]
+    [AcceptedTokenTypes(TokenType.Refresh)]
+    [Route("refresh")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScrabbleWebResponse<TokensPayload>))]
+    public async Task<IActionResult> Tokens()
+    {
+        return Ok(await ExecuteToScrabbleResponseAsync(async () =>
+        {
+            var currentUser = await _playerService.GetSelf(HttpContext);
+            return _playerService.GenerateTokens(currentUser);
+        }));
     }
 }

@@ -2,12 +2,15 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ScrabbleServer.Data.Models.DTOs;
 using ScrabbleServer.Data.Web;
+using ScrabbleServer.Data.Web.Attributes;
+using ScrabbleServer.Data.Web.Models.Types;
 using ScrabbleServer.Services;
 
 namespace ScrabbleServer.Controllers;
 
 [Authorize]
 [Route("players")]
+[AcceptedTokenTypes(TokenType.Access)]
 public class PlayerController : ScrabbleBaseController
 {
     private readonly PlayerService _playerService;

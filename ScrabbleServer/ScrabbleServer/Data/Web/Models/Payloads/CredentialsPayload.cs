@@ -1,4 +1,4 @@
-namespace ScrabbleServer.Data.Web.Payloads;
+namespace ScrabbleServer.Data.Web.Models.Payloads;
 
 public class CredentialsPayload
 {

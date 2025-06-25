@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using ScrabbleServer.Data.Web;
+using ScrabbleServer.Data.Web.Attributes;
+using ScrabbleServer.Data.Web.Models.Types;
 
 namespace ScrabbleServer.Controllers;
 
 [Route("games")]
+[AcceptedTokenTypes(TokenType.Access)]
 public class GameController : ScrabbleBaseController
 {
     private readonly ILogger<GameController> _logger;
