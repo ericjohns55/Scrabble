@@ -64,13 +64,15 @@ class GameViewModel: ObservableObject {
     
     let tileSize: CGFloat = 44
     let maxTiles: Int = 7
+    
+    var seededRandomGenerator: SeededRandomGenerator
 
-    init(boardIdentifier: BoardIdentifier, boardState: BoardState, wordSet: Set<String>) {
+    init(boardIdentifier: BoardIdentifier, boardState: BoardState, wordSet: Set<String>, seed: UInt64? = 12345) {
         self.boardManager = BoardViewModel(boardIdentifier: boardIdentifier)
         self.boardState = boardState
         self.wordSet = wordSet
         
-        boardManager.removeAllTiles()
+        self.seededRandomGenerator = SeededRandomGenerator(seed: seed)
         
         committedTiles.removeAll()
         playerTiles.removeAll()
@@ -90,7 +92,7 @@ class GameViewModel: ObservableObject {
             }
         }
         
-        tileBag.shuffle()
+        tileBag.shuffle(using: &seededRandomGenerator)
     }
     
     func drawTiles(_ count: Int) {
