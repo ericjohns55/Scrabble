@@ -7,7 +7,7 @@ namespace ScrabbleServer.Data.Models.DatabaseModels;
 public class Player
 {
     [Column("ID")]
-    public int PlayerId { get; init; }
+    public long Id { get; init; }
 
     [Column("UUID")] 
     public Guid Uuid { get; init; }

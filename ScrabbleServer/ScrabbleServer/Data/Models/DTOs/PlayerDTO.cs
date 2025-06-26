@@ -2,7 +2,7 @@ namespace ScrabbleServer.Data.Models.DTOs;
 
 public class PlayerDTO
 {
-    public int PlayerId { get; init; }
+    public long Id { get; init; }
 
     public Guid Uuid { get; init; }
 

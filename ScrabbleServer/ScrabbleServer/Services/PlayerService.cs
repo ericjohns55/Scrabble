@@ -50,6 +50,18 @@ public class PlayerService
         return player.ToDTO();
     }
 
+    public async Task<PlayerDTO> GetPlayer(Guid playerId)
+    {
+        var player = await _scrabbleContext.Players.FirstOrDefaultAsync(p => p.Uuid == playerId);
+
+        if (player == null)
+        {
+            throw new ItemNotFoundException($"Could not find player with ID {playerId}");
+        }
+        
+        return player.ToDTO();
+    }
+
     public Task<bool> IsDisplayNameTaken(string displayName)
     {
         return _scrabbleContext.Players.AnyAsync(player => player.Username == displayName);

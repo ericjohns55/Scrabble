@@ -23,6 +23,7 @@ services.AddControllers().AddJsonOptions(options =>
 });
 
 services.AddScoped<PlayerService>();
+services.AddScoped<GameService>();
 
 services.AddDbContext<ScrabbleContext>(options =>
     options.UseSqlite("Data Source=ScrabbleDatabase.db;Mode=ReadWriteCreate"));

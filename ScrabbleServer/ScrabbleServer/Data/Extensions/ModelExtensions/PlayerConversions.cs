@@ -9,7 +9,7 @@ public static class PlayerConversions
     {
         return new PlayerDTO()
         {
-            PlayerId = player.PlayerId,
+            Id = player.Id,
             Uuid = player.Uuid,
             Username = player.Username,
             ProfilePicture = player.ProfilePicture,

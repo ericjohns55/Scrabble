@@ -57,7 +57,12 @@ public class ExceptionMiddleware
                 return HttpStatusCode.Unauthorized;
             case ArgumentException:
             case InvalidDisplayNameException:
+            case AlreadyPlayedException:
+            case InvalidGameCreationException: 
+            case InvalidUserException:
                 return HttpStatusCode.BadRequest;
+            case ItemNotFoundException:
+                return HttpStatusCode.NotFound;
             case DisplayNameTakenException:
                 return HttpStatusCode.Conflict;
             default:

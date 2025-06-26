@@ -29,10 +29,19 @@ public class PlayerController : ScrabbleBaseController
         return Ok(await ExecuteToScrabbleListResponseAsync(() => _playerService.GetPlayers()));
     }
 
-    [HttpGet("self")]
+    [HttpGet]
+    [Route("self")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScrabbleWebListResponse<PlayerDTO>))]
     public async Task<IActionResult> GetSelf()
     {
         return Ok(await ExecuteToScrabbleResponseAsync(() => _playerService.GetSelf(HttpContext)));
+    }
+
+    [HttpGet]
+    [Route("{playerId}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScrabbleWebResponse<PlayerDTO>))]
+    public async Task<IActionResult> GetPlayer(Guid playerId)
+    {
+        return Ok(await ExecuteToScrabbleResponseAsync(() => _playerService.GetPlayer(playerId)));
     }
 }
