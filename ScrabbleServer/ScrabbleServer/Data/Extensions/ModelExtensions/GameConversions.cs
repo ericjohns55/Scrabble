@@ -13,6 +13,7 @@ public static class GameConversions
             Uuid = game.Uuid,
             Seed = game.Seed,
             CreatedAt = game.CreatedAt,
+            UpdatedAt = game.UpdatedAt,
             CompletedAt = game.CompletedAt,
             BoardIdentifier = game.BoardIdentifier,
             GameState = game.GameState,
@@ -20,14 +21,21 @@ public static class GameConversions
             OpposingPlayer = game.OpposingPlayer.ToDTO(),
             InitiatingPlayerMove = game.InitiatingPlayerMove?.ToDTO() ?? null,
             OpposingPlayerMove = game.OpposingPlayerMove?.ToDTO() ?? null,
+            GameTied = null
         };
 
         PlayerDTO? winningPlayer = null;
-        if (game.WinningPlayerId != -1)
+        if (game.WinningPlayerId > 0)
         {
             winningPlayer = gameDto.InitiatingPlayer.Id == game.WinningPlayerId
                 ? gameDto.InitiatingPlayer
                 : gameDto.OpposingPlayer;
+
+            gameDto.GameTied = false;
+        }
+        else if (game.WinningPlayerId == 0)
+        {
+            gameDto.GameTied = true;
         }
         
         gameDto.WinningPlayer = winningPlayer;

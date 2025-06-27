@@ -3,7 +3,8 @@ namespace ScrabbleServer.Data.Models.Types;
 public enum GameState
 {
     Pending,
-    Denied,
+    Declined,
     WaitingForMoves,
-    Completed
+    Completed,
+    Forfeited
 }

@@ -18,6 +18,9 @@ public class Game
     [Column("CREATED_AT")]
     public DateTime CreatedAt { get; init; }
     
+    [Column("UPDATED_AT")]
+    public DateTime UpdatedAt { get; set; }
+    
     [Column("COMPLETED_AT")]
     public DateTime CompletedAt { get; set; }
     

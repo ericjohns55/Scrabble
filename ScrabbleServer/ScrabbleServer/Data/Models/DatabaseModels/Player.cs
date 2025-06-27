@@ -24,7 +24,7 @@ public class Player
     
     [MaxLength(8192)]
     [Column("PROFILE_PICTURE")]
-    public string? ProfilePicture { get; init; } = string.Empty;
+    public string? ProfilePicture { get; set; } = string.Empty;
     
     [Column("CREATED_DATE")]
     public DateTime CreatedDate { get; init; }

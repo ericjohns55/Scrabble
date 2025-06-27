@@ -60,6 +60,7 @@ public class ExceptionMiddleware
             case AlreadyPlayedException:
             case InvalidGameCreationException: 
             case InvalidUserException:
+            case GameException:
                 return HttpStatusCode.BadRequest;
             case ItemNotFoundException:
                 return HttpStatusCode.NotFound;

@@ -65,6 +65,40 @@ public class GameController : ScrabbleBaseController
             return await _gameService.UpdateGame(gameId, currentPlayer, gameMovePayload);
         }));
     }
-    
-    // TODO: denying and accepting games
+
+    [HttpPost]
+    [Route("{gameId}/decline")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScrabbleWebResponse<GameDTO>))]
+    public async Task<IActionResult> DeclineGame(Guid gameId)
+    {
+        return Ok(await ExecuteToScrabbleResponseAsync(async () =>
+        {
+            var currentPlayer = await _playerService.GetSelf(HttpContext);
+            return await _gameService.DeclineGame(currentPlayer, gameId);
+        }));
+    }
+
+    [HttpPost]
+    [Route("{gameId}/accept")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScrabbleWebResponse<GameDTO>))]
+    public async Task<IActionResult> AcceptGame(Guid gameId)
+    {
+        return Ok(await ExecuteToScrabbleResponseAsync(async () =>
+        {
+            var currentPlayer = await _playerService.GetSelf(HttpContext);
+            return await _gameService.AcceptGame(currentPlayer, gameId);
+        }));
+    }
+
+    [HttpPost]
+    [Route("{gameId}/forfeit")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScrabbleWebResponse<GameDTO>))]
+    public async Task<IActionResult> ForfeitGame(Guid gameId)
+    {
+        return Ok(await ExecuteToScrabbleResponseAsync(async () =>
+        {
+            var currentPlayer = await _playerService.GetSelf(HttpContext);
+            return await _gameService.ForfeitGame(currentPlayer, gameId);
+        }));
+    }
 }

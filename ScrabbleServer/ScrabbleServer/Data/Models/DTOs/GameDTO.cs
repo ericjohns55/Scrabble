@@ -13,7 +13,9 @@ public class GameDTO
     public DateTime CreatedAt { get; init; }
     
     public DateTime CompletedAt { get; init; }
-    
+
+    public DateTime UpdatedAt { get; init; }
+
     public BoardIdentifier BoardIdentifier { get; init; }
     
     public GameState GameState { get; set; }
@@ -27,4 +29,6 @@ public class GameDTO
     public GameMoveDTO? OpposingPlayerMove { get; set; }
 
     public PlayerDTO? WinningPlayer { get; set; } = null;
+
+    public bool? GameTied { get; set; } = null;
 }

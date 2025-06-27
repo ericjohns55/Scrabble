@@ -71,6 +71,8 @@ public class GameService
         {
             throw new InvalidGameCreationException("You cannot create a game with yourself");
         }
+        
+        var currentTime = DateTime.UtcNow;
 
         var newGame = new Game()
         {
@@ -79,7 +81,8 @@ public class GameService
             Uuid = Guid.NewGuid(),
             BoardIdentifier = creationPayload.BoardIdentifier,
             Seed = creationPayload.Seed,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = currentTime,
+            UpdatedAt = currentTime,
             GameState = GameState.Pending
         };
         
@@ -87,6 +90,87 @@ public class GameService
         await _scrabbleContext.SaveChangesAsync();
         
         return (await GetGame(newGame.Uuid)).ToDTO();
+    }
+
+    public async Task<GameDTO> DeclineGame(PlayerDTO decliningPlayer, Guid gameId)
+    {
+        var game = await GetGame(gameId);
+
+        if (game.GameState != GameState.Pending)
+        {
+            throw new GameException("You can only decline a game that has not started");
+        }
+
+        if (game.OpposingPlayerId != decliningPlayer.Id)
+        {
+            throw new GameException("You cannot decline a game you created");
+        }
+        
+        var currentTime = DateTime.UtcNow;
+        
+        game.GameState = GameState.Declined;
+        game.UpdatedAt = currentTime;
+        game.CompletedAt = currentTime;
+        
+        _scrabbleContext.Update(game);
+        await _scrabbleContext.SaveChangesAsync();
+        
+        return (await GetGame(gameId)).ToDTO();
+    }
+
+    public async Task<GameDTO> AcceptGame(PlayerDTO acceptingPlayer, Guid gameId)
+    {
+        var game = await GetGame(gameId);
+
+        if (game.GameState != GameState.Pending)
+        {
+            throw new GameException("You can only accept a game that has not started");
+        }
+
+        if (game.OpposingPlayerId != acceptingPlayer.Id)
+        {
+            throw new GameException("You cannot accept a game you created");
+        }
+        
+        game.GameState = GameState.WaitingForMoves;
+        game.UpdatedAt = DateTime.UtcNow;
+        
+        _scrabbleContext.Update(game);
+        await _scrabbleContext.SaveChangesAsync();
+        
+        return (await GetGame(gameId)).ToDTO();
+    }
+
+    public async Task<GameDTO> ForfeitGame(PlayerDTO forfeitingPlayer, Guid gameId)
+    {
+        var game = await GetGame(gameId);
+
+        if (game.GameState == GameState.Pending && game.OpposingPlayerId == forfeitingPlayer.Id)
+        {
+            throw new GameException("You cannot forfeit a game you never accepted");
+        }
+
+        if (game.GameState != GameState.Pending && game.GameState != GameState.WaitingForMoves)
+        {
+            throw new GameException("This game can not be forfeited at this point");
+        }
+        
+        if (game.OpposingPlayerId != forfeitingPlayer.Id && game.InitiatingPlayerId != forfeitingPlayer.Id)
+        {
+            throw new GameException("You are not part of this game");
+        }
+
+        var currentTime = DateTime.UtcNow;
+        
+        game.WinningPlayerId = game.OpposingPlayerId == forfeitingPlayer.Id ? game.InitiatingPlayerId : game.OpposingPlayerId;
+        game.UpdatedAt = currentTime;
+        game.CompletedAt = currentTime;
+        game.GameState = GameState.Forfeited;
+        
+        _scrabbleContext.Update(game);
+        await _scrabbleContext.SaveChangesAsync();
+        
+        return (await GetGame(gameId)).ToDTO();
     }
 
     public async Task<GameDTO> UpdateGame(Guid gameId, PlayerDTO currentPlayer, GameMovePayload gameMovePayload)
@@ -159,21 +243,30 @@ public class GameService
 
     private async Task UpdateGameState(Game currentGame)
     {
+        var currentTime = DateTime.UtcNow;
+        
+        currentGame.UpdatedAt = DateTime.UtcNow;
+        
         if (currentGame.OpposingPlayerMoveId != null && currentGame.InitiatingPlayerMoveId != null)
         {
             currentGame.GameState = GameState.Completed;
-            currentGame.CompletedAt = DateTime.UtcNow;
+            currentGame.CompletedAt = currentTime;
             
             var initiatingPlayerMove = await GetGameMove(currentGame.InitiatingPlayerMoveId.Value);
             var opposingPlayerMove = await GetGameMove(currentGame.OpposingPlayerMoveId.Value);
             
-            // TODO: handle ties
+            if (initiatingPlayerMove.Score == opposingPlayerMove.Score)
+            {
+                currentGame.WinningPlayerId = 0;
+            }
+            else
+            {
+                var winningPlayerId = initiatingPlayerMove.Score > opposingPlayerMove.Score
+                    ? initiatingPlayerMove.PlayerId
+                    : opposingPlayerMove.PlayerId;
             
-            var winningPlayerId = initiatingPlayerMove.Score > opposingPlayerMove.Score
-                ? initiatingPlayerMove.PlayerId
-                : opposingPlayerMove.PlayerId;
-            
-            currentGame.WinningPlayerId = winningPlayerId;
+                currentGame.WinningPlayerId = winningPlayerId;
+            }
         }
         else
         {
