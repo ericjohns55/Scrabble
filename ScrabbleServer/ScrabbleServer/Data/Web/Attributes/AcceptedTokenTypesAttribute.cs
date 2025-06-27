@@ -1,7 +1,9 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http.Headers;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using ScrabbleServer.Data.Web.Models.Types;
-using ScrabbleServer.Utilities;
 
 namespace ScrabbleServer.Data.Web.Attributes;
 
@@ -16,8 +18,8 @@ public class AcceptedTokenTypesAttribute : Attribute, IAsyncActionFilter
 
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
-        var jwtToken = AuthUtilities.GetJwtFromContext(context.HttpContext);
-        var tokenType = AuthUtilities.GetTokenType(jwtToken);
+        var jwtToken = GetJwtFromContext(context.HttpContext);
+        var tokenType = GetTokenType(jwtToken);
 
         if (tokenType == null || tokenType != _tokenType)
         {
@@ -26,5 +28,37 @@ public class AcceptedTokenTypesAttribute : Attribute, IAsyncActionFilter
         }
 
         await next();
+    }
+    
+    
+    private JwtSecurityToken GetJwtFromContext(HttpContext httpContext)
+    {
+        if (string.IsNullOrWhiteSpace(httpContext.Request.Headers["Authorization"]))
+        {
+            throw new UnauthorizedAccessException("Missing token");
+        }
+        
+        if (AuthenticationHeaderValue.TryParse(httpContext.Request.Headers["Authorization"], out var authenticationHeaderValue))
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            return tokenHandler.ReadJwtToken(authenticationHeaderValue.Parameter);
+        }
+        
+        throw new UnauthorizedAccessException("Invalid token");
+    }
+
+    private TokenType? GetTokenType(JwtSecurityToken jwtSecurityToken)
+    {
+        var tokenType = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+
+        if (!string.IsNullOrEmpty(tokenType))
+        {
+            if (TokenType.TryParse(tokenType, out TokenType token))
+            {
+                return token;
+            }
+        }
+
+        return null;
     }
 }

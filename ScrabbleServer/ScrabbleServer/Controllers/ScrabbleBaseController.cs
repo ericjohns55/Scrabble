@@ -7,7 +7,7 @@ namespace ScrabbleServer.Controllers;
 
 public class ScrabbleBaseController : Controller
 {
-    public static ScrabbleWebResponse<T> ExecuteToScrabbleResponse<T>(Func<T> func)
+    protected static ScrabbleWebResponse<T> ExecuteToScrabbleResponse<T>(Func<T> func)
     {
         Stopwatch stopwatch = Stopwatch.StartNew();
         var data = func.Invoke();
@@ -20,7 +20,7 @@ public class ScrabbleBaseController : Controller
         };
     }
 
-    public static Task<ScrabbleWebResponse<T>> ExecuteToScrabbleResponseAsync<T>(Func<Task<T>> func)
+    protected static Task<ScrabbleWebResponse<T>> ExecuteToScrabbleResponseAsync<T>(Func<Task<T>> func)
     {
         Stopwatch stopwatch = Stopwatch.StartNew();
 
@@ -36,7 +36,7 @@ public class ScrabbleBaseController : Controller
         });
     }
 
-    public static Task<ScrabbleWebListResponse<T>> ExecuteToScrabbleListResponseAsync<T>(Func<Task<List<T>>> func)
+    protected static Task<ScrabbleWebListResponse<T>> ExecuteToScrabbleListResponseAsync<T>(Func<Task<List<T>>> func)
     {
         Stopwatch stopwatch = Stopwatch.StartNew();
 

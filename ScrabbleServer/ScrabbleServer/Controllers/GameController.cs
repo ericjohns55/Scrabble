@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using ScrabbleServer.Contexts;
+using ScrabbleServer.Data.Models.DatabaseModels;
 using ScrabbleServer.Data.Models.DTOs;
 using ScrabbleServer.Data.Web;
 using ScrabbleServer.Data.Web.Attributes;
@@ -13,13 +15,15 @@ namespace ScrabbleServer.Controllers;
 public class GameController : ScrabbleBaseController
 {
     private readonly ILogger<GameController> _logger;
+    private readonly ScrabbleContext _scrabbleContext;
     private readonly GameService _gameService;
-    private readonly PlayerService _playerService;
 
-    public GameController(GameService gameService, PlayerService playerService, ILogger<GameController> logger)
+    private Player CurrentPlayer => _scrabbleContext.GetCurrentPlayerOrThrow();
+
+    public GameController(GameService gameService, ScrabbleContext scrabbleContext, ILogger<GameController> logger)
     {
         _gameService = gameService;
-        _playerService = playerService;
+        _scrabbleContext = scrabbleContext;
         _logger = logger;
     }
 
@@ -27,11 +31,8 @@ public class GameController : ScrabbleBaseController
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScrabbleWebListResponse<GameDTO>))]
     public async Task<IActionResult> GetGames()
     {
-        return Ok(await ExecuteToScrabbleListResponseAsync(async () =>
-        {
-            var currentPlayer = await _playerService.GetSelf(HttpContext);
-            return await _gameService.GetGames(currentPlayer);
-        }));
+        // TODO: game status query param
+        return Ok(await ExecuteToScrabbleListResponseAsync(() => _gameService.GetGames(CurrentPlayer)));
     }
 
     [HttpPost]
@@ -39,11 +40,7 @@ public class GameController : ScrabbleBaseController
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScrabbleWebResponse<GameDTO>))]
     public async Task<IActionResult> CreateGame([FromBody] GameCreationPayload gameCreationPayload)
     {
-        return Ok(await ExecuteToScrabbleResponseAsync(async () =>
-        {
-            var currentPlayer = await _playerService.GetSelf(HttpContext);
-            return await _gameService.CreateGame(currentPlayer, gameCreationPayload);
-        }));
+        return Ok(await ExecuteToScrabbleResponseAsync(() => _gameService.CreateGame(CurrentPlayer, gameCreationPayload)));
     }
 
     [HttpGet]
@@ -59,11 +56,7 @@ public class GameController : ScrabbleBaseController
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScrabbleWebResponse<GameDTO>))]
     public async Task<IActionResult> SubmitMove(Guid gameId, [FromBody] GameMovePayload gameMovePayload)
     {
-        return Ok(await ExecuteToScrabbleResponseAsync(async () =>
-        {
-            var currentPlayer = await _playerService.GetSelf(HttpContext);
-            return await _gameService.UpdateGame(gameId, currentPlayer, gameMovePayload);
-        }));
+        return Ok(await ExecuteToScrabbleResponseAsync(() => _gameService.UpdateGame(gameId, CurrentPlayer, gameMovePayload)));
     }
 
     [HttpPost]
@@ -71,11 +64,7 @@ public class GameController : ScrabbleBaseController
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScrabbleWebResponse<GameDTO>))]
     public async Task<IActionResult> DeclineGame(Guid gameId)
     {
-        return Ok(await ExecuteToScrabbleResponseAsync(async () =>
-        {
-            var currentPlayer = await _playerService.GetSelf(HttpContext);
-            return await _gameService.DeclineGame(currentPlayer, gameId);
-        }));
+        return Ok(await ExecuteToScrabbleResponseAsync(() => _gameService.DeclineGame(CurrentPlayer, gameId)));
     }
 
     [HttpPost]
@@ -83,11 +72,7 @@ public class GameController : ScrabbleBaseController
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScrabbleWebResponse<GameDTO>))]
     public async Task<IActionResult> AcceptGame(Guid gameId)
     {
-        return Ok(await ExecuteToScrabbleResponseAsync(async () =>
-        {
-            var currentPlayer = await _playerService.GetSelf(HttpContext);
-            return await _gameService.AcceptGame(currentPlayer, gameId);
-        }));
+        return Ok(await ExecuteToScrabbleResponseAsync(() => _gameService.AcceptGame(CurrentPlayer, gameId)));
     }
 
     [HttpPost]
@@ -95,10 +80,6 @@ public class GameController : ScrabbleBaseController
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScrabbleWebResponse<GameDTO>))]
     public async Task<IActionResult> ForfeitGame(Guid gameId)
     {
-        return Ok(await ExecuteToScrabbleResponseAsync(async () =>
-        {
-            var currentPlayer = await _playerService.GetSelf(HttpContext);
-            return await _gameService.ForfeitGame(currentPlayer, gameId);
-        }));
+        return Ok(await ExecuteToScrabbleResponseAsync(() => _gameService.ForfeitGame(CurrentPlayer, gameId)));
     }
 }

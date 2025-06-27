@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using ScrabbleServer.Data;
+using ScrabbleServer.Contexts;
 using ScrabbleServer.Data.Exceptions;
 using ScrabbleServer.Data.Extensions.ModelExtensions;
 using ScrabbleServer.Data.Models.DatabaseModels;
@@ -22,9 +22,9 @@ public class GameService
         _logger = logger;
     }
 
-    public async Task<List<GameDTO>> GetGames(PlayerDTO currentPlayer, GameState? gameState = null)
+    public async Task<List<GameDTO>> GetGames(Player currentPlayer, GameState? gameState = null)
     {
-        var gamesQuery = _scrabbleContext.Games
+        var gamesQuery = _scrabbleContext.DatabaseContext.Games
             .Include(g => g.InitiatingPlayer)
             .Include(g => g.OpposingPlayer)
             .Include(g => g.InitiatingPlayerMove)
@@ -43,7 +43,7 @@ public class GameService
 
     public async Task<Game> GetGame(Guid gameId)
     {
-        var game = await _scrabbleContext.Games
+        var game = await _scrabbleContext.DatabaseContext.Games
             .Include(g => g.InitiatingPlayer)
             .Include(g => g.OpposingPlayer)
             .Include(g => g.InitiatingPlayerMove)
@@ -63,7 +63,7 @@ public class GameService
         return (await GetGame(gameId)).ToDTO();
     }
 
-    public async Task<GameDTO> CreateGame(PlayerDTO initiatingPlayer, GameCreationPayload creationPayload)
+    public async Task<GameDTO> CreateGame(Player initiatingPlayer, GameCreationPayload creationPayload)
     {
         var opposingPlayer = await _playerService.GetPlayer(creationPayload.OpponentUuid);
 
@@ -86,13 +86,13 @@ public class GameService
             GameState = GameState.Pending
         };
         
-        await _scrabbleContext.Games.AddAsync(newGame);
-        await _scrabbleContext.SaveChangesAsync();
+        await _scrabbleContext.DatabaseContext.Games.AddAsync(newGame);
+        await _scrabbleContext.DatabaseContext.SaveChangesAsync();
         
         return (await GetGame(newGame.Uuid)).ToDTO();
     }
 
-    public async Task<GameDTO> DeclineGame(PlayerDTO decliningPlayer, Guid gameId)
+    public async Task<GameDTO> DeclineGame(Player decliningPlayer, Guid gameId)
     {
         var game = await GetGame(gameId);
 
@@ -112,13 +112,13 @@ public class GameService
         game.UpdatedAt = currentTime;
         game.CompletedAt = currentTime;
         
-        _scrabbleContext.Update(game);
-        await _scrabbleContext.SaveChangesAsync();
+        _scrabbleContext.DatabaseContext.Update(game);
+        await _scrabbleContext.DatabaseContext.SaveChangesAsync();
         
         return (await GetGame(gameId)).ToDTO();
     }
 
-    public async Task<GameDTO> AcceptGame(PlayerDTO acceptingPlayer, Guid gameId)
+    public async Task<GameDTO> AcceptGame(Player acceptingPlayer, Guid gameId)
     {
         var game = await GetGame(gameId);
 
@@ -135,13 +135,13 @@ public class GameService
         game.GameState = GameState.WaitingForMoves;
         game.UpdatedAt = DateTime.UtcNow;
         
-        _scrabbleContext.Update(game);
-        await _scrabbleContext.SaveChangesAsync();
+        _scrabbleContext.DatabaseContext.Update(game);
+        await _scrabbleContext.DatabaseContext.SaveChangesAsync();
         
         return (await GetGame(gameId)).ToDTO();
     }
 
-    public async Task<GameDTO> ForfeitGame(PlayerDTO forfeitingPlayer, Guid gameId)
+    public async Task<GameDTO> ForfeitGame(Player forfeitingPlayer, Guid gameId)
     {
         var game = await GetGame(gameId);
 
@@ -167,13 +167,13 @@ public class GameService
         game.CompletedAt = currentTime;
         game.GameState = GameState.Forfeited;
         
-        _scrabbleContext.Update(game);
-        await _scrabbleContext.SaveChangesAsync();
+        _scrabbleContext.DatabaseContext.Update(game);
+        await _scrabbleContext.DatabaseContext.SaveChangesAsync();
         
         return (await GetGame(gameId)).ToDTO();
     }
 
-    public async Task<GameDTO> UpdateGame(Guid gameId, PlayerDTO currentPlayer, GameMovePayload gameMovePayload)
+    public async Task<GameDTO> UpdateGame(Guid gameId, Player currentPlayer, GameMovePayload gameMovePayload)
     {
         var currentGame = await GetGame(gameId);
         
@@ -221,8 +221,8 @@ public class GameService
             SerializedBoard = gameMovePayload.SerializedBoard
         };
         
-        await _scrabbleContext.GameMoves.AddAsync(newMove);
-        await _scrabbleContext.SaveChangesAsync();
+        await _scrabbleContext.DatabaseContext.GameMoves.AddAsync(newMove);
+        await _scrabbleContext.DatabaseContext.SaveChangesAsync();
 
         if (isInitiator)
         {
@@ -235,8 +235,8 @@ public class GameService
 
         await UpdateGameState(currentGame);
 
-        _scrabbleContext.Update(currentGame);
-        await _scrabbleContext.SaveChangesAsync();
+        _scrabbleContext.DatabaseContext.Update(currentGame);
+        await _scrabbleContext.DatabaseContext.SaveChangesAsync();
 
         return await GetGameDto(currentGame.Uuid);
     }
@@ -276,6 +276,6 @@ public class GameService
 
     private Task<GameMove> GetGameMove(long gameMoveId)
     {
-        return _scrabbleContext.GameMoves.SingleAsync(gm => gm.Id == gameMoveId);
+        return _scrabbleContext.DatabaseContext.GameMoves.SingleAsync(gm => gm.Id == gameMoveId);
     }
 }

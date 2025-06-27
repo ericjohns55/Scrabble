@@ -2,7 +2,7 @@ using System.Security.Authentication;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
-using ScrabbleServer.Data;
+using ScrabbleServer.Contexts;
 using ScrabbleServer.Data.Exceptions;
 using ScrabbleServer.Data.Extensions.ModelExtensions;
 using ScrabbleServer.Data.Models.DatabaseModels;
@@ -26,33 +26,22 @@ public class PlayerService
 
     public Task<List<PlayerDTO>> GetPlayers()
     {
-        return _scrabbleContext.Players.Select(player => player.ToDTO()).ToListAsync();
+        return _scrabbleContext.DatabaseContext.Players.Select(player => player.ToDTO()).ToListAsync();
     }
 
-    public async Task<PlayerDTO> GetSelf(HttpContext httpContext)
+    public PlayerDTO GetSelf()
     {
-        var displayName = httpContext.User.Identity?.Name;
-        var uuid = httpContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Sid)?.Value;
-
-        if (string.IsNullOrWhiteSpace(displayName) || string.IsNullOrWhiteSpace(uuid))
+        if (_scrabbleContext.Player == null)
         {
             throw new UnauthorizedAccessException("You are not authorized to access this resource.");
         }
 
-        var player = await _scrabbleContext.Players
-            .SingleOrDefaultAsync(player => player.Username == displayName && player.Uuid == Guid.Parse(uuid));
-
-        if (player == null)
-        {
-            throw new UnauthorizedAccessException("You are not authorized to access this resource.");
-        }
-        
-        return player.ToDTO();
+        return _scrabbleContext.Player.ToDTO();
     }
 
     public async Task<PlayerDTO> GetPlayer(Guid playerId)
     {
-        var player = await _scrabbleContext.Players.FirstOrDefaultAsync(p => p.Uuid == playerId);
+        var player = await _scrabbleContext.DatabaseContext.Players.FirstOrDefaultAsync(p => p.Uuid == playerId);
 
         if (player == null)
         {
@@ -64,12 +53,12 @@ public class PlayerService
 
     public Task<bool> IsDisplayNameTaken(string displayName)
     {
-        return _scrabbleContext.Players.AnyAsync(player => player.Username == displayName);
+        return _scrabbleContext.DatabaseContext.Players.AnyAsync(player => player.Username == displayName);
     }
 
     public async Task<TokensPayload> Login(CredentialsPayload credentialsPayload)
     {
-        var user = await _scrabbleContext.Players
+        var user = await _scrabbleContext.DatabaseContext.Players
             .FirstOrDefaultAsync(player => player.Username == credentialsPayload.Username
                                            && player.Password == Cryptography.ComputeHash(credentialsPayload.Password));
 
@@ -112,7 +101,7 @@ public class PlayerService
             throw new InvalidDisplayNameException("Invalid characters found in display name.");
         }
         
-        if (_scrabbleContext.Players.Any(player => player.Username == credentialsPayload.Username))
+        if (_scrabbleContext.DatabaseContext.Players.Any(player => player.Username == credentialsPayload.Username))
         {
             throw new DisplayNameTakenException($"Username {credentialsPayload.Username} already taken.");
         }
@@ -127,8 +116,8 @@ public class PlayerService
             UpdatedDate = DateTime.UtcNow
         };
         
-        await _scrabbleContext.Players.AddAsync(newPlayer);
-        await _scrabbleContext.SaveChangesAsync();
+        await _scrabbleContext.DatabaseContext.Players.AddAsync(newPlayer);
+        await _scrabbleContext.DatabaseContext.SaveChangesAsync();
 
         return newPlayer.ToDTO();
     }

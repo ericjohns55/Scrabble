@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ScrabbleServer;
-using ScrabbleServer.Data;
+using ScrabbleServer.Contexts;
 using ScrabbleServer.Services;
 using ScrabbleServer.Utilities;
 
@@ -22,10 +22,13 @@ services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 });
 
+services.AddHttpContextAccessor();
+
+services.AddScoped<ScrabbleContext>();
 services.AddScoped<PlayerService>();
 services.AddScoped<GameService>();
 
-services.AddDbContext<ScrabbleContext>(options =>
+services.AddDbContext<DatabaseContext>(options =>
     options.UseSqlite("Data Source=ScrabbleDatabase.db;Mode=ReadWriteCreate"));
 
 services
@@ -55,7 +58,7 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    var context = scope.ServiceProvider.GetRequiredService<ScrabbleContext>();
+    var context = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
     await context.Database.EnsureCreatedAsync();
 }
 

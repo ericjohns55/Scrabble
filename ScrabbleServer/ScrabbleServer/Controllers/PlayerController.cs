@@ -32,9 +32,9 @@ public class PlayerController : ScrabbleBaseController
     [HttpGet]
     [Route("self")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScrabbleWebListResponse<PlayerDTO>))]
-    public async Task<IActionResult> GetSelf()
+    public IActionResult GetSelf()
     {
-        return Ok(await ExecuteToScrabbleResponseAsync(() => _playerService.GetSelf(HttpContext)));
+        return Ok(ExecuteToScrabbleResponse(() => _playerService.GetSelf()));
     }
 
     [HttpGet]

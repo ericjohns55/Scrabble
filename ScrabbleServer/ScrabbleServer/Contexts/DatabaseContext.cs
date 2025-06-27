@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using ScrabbleServer.Data.Models.DatabaseModels;
 
-namespace ScrabbleServer.Data;
+namespace ScrabbleServer.Contexts;
 
-public class ScrabbleContext : DbContext
+public class DatabaseContext : DbContext
 {
-    public ScrabbleContext(DbContextOptions<ScrabbleContext> options) : base(options)
+    public DatabaseContext(DbContextOptions<DatabaseContext> options) : base(options)
     {
     }
     

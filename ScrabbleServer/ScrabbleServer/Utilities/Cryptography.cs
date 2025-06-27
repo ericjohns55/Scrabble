@@ -8,7 +8,7 @@ using ScrabbleServer.Data.Web.Models.Types;
 
 namespace ScrabbleServer.Utilities;
 
-public class Cryptography
+public static class Cryptography
 {
     public static string ComputeHash(string input)
     {

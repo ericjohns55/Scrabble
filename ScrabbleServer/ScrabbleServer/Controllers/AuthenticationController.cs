@@ -52,11 +52,11 @@ public class AuthenticationController : ScrabbleBaseController
     [AcceptedTokenTypes(TokenType.Refresh)]
     [Route("refresh")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScrabbleWebResponse<TokensPayload>))]
-    public async Task<IActionResult> Tokens()
+    public IActionResult Tokens()
     {
-        return Ok(await ExecuteToScrabbleResponseAsync(async () =>
+        return Ok(ExecuteToScrabbleResponse(() =>
         {
-            var currentUser = await _playerService.GetSelf(HttpContext);
+            var currentUser = _playerService.GetSelf();
             return _playerService.GenerateTokens(currentUser);
         }));
     }
