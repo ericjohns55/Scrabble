@@ -7,7 +7,7 @@
 
 import UIKit
 
-enum BoardIdentifier {
+enum BoardIdentifier: Codable {
     case diamond9, diamond11, diamond13, x9, x11, x13
     
     static func getBoardSize(_ identifier: BoardIdentifier) -> Int {

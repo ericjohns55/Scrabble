@@ -24,7 +24,7 @@ struct MainMenu: View {
                 case .boardSelector:
                     BoardSelectorView(appViewModel: appViewModel)
                 case .multiplayer:
-                    Text("MULTIPLAYER")
+                    MultiplayerView(appViewModel: appViewModel)
                 case .game:
                     GameView(appViewModel: appViewModel)
             }
@@ -85,7 +85,8 @@ struct MainMenu: View {
                 .padding(.horizontal, 4)
                 
                 Button(action: {
-                    popupManager.displayToast(text: "Not implemented", color: .red)
+                    appViewModel.currentPage = .multiplayer
+//                    popupManager.displayToast(text: "Not implemented", color: .red)
                 }) {
                     Text("Multiplayer")
                         .frame(maxWidth: scaledWidth, maxHeight: MainMenu.buttonHeight)

@@ -24,9 +24,16 @@ public class PlayerService
         _logger = logger;
     }
 
-    public Task<List<PlayerDTO>> GetPlayers()
+    public Task<List<PlayerDTO>> GetPlayers(bool includeSelf = true)
     {
-        return _scrabbleContext.DatabaseContext.Players.Select(player => player.ToDTO()).ToListAsync();
+        var query = _scrabbleContext.DatabaseContext.Players.AsQueryable();
+
+        if (!includeSelf)
+        {
+            query = query.Where(p => p.Id != _scrabbleContext.Player!.Id);
+        }
+        
+        return query.Select(player => player.ToDTO()).ToListAsync();
     }
 
     public PlayerDTO GetSelf()

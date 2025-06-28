@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		303E805E2E10943100196414 /* AsyncHTTPClient in Frameworks */ = {isa = PBXBuildFile; productRef = 303E805D2E10943100196414 /* AsyncHTTPClient */; };
 		309DAE112DFFA66E00C2DAE9 /* AlertToast in Frameworks */ = {isa = PBXBuildFile; productRef = 309DAE102DFFA66E00C2DAE9 /* AlertToast */; };
 /* End PBXBuildFile section */
 
@@ -56,6 +57,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				303E805E2E10943100196414 /* AsyncHTTPClient in Frameworks */,
 				309DAE112DFFA66E00C2DAE9 /* AlertToast in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -118,6 +120,7 @@
 			name = Scrabble;
 			packageProductDependencies = (
 				309DAE102DFFA66E00C2DAE9 /* AlertToast */,
+				303E805D2E10943100196414 /* AsyncHTTPClient */,
 			);
 			productName = Scrabble;
 			productReference = 305037562DDA4A6C00C9366D /* Scrabble.app */;
@@ -203,6 +206,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				309DAE0F2DFFA66E00C2DAE9 /* XCRemoteSwiftPackageReference "AlertToast" */,
+				30BC28852E109317008B53FC /* XCRemoteSwiftPackageReference "async-http-client" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 305037572DDA4A6C00C9366D /* Products */;
@@ -579,9 +583,22 @@
 				minimumVersion = 1.3.9;
 			};
 		};
+		30BC28852E109317008B53FC /* XCRemoteSwiftPackageReference "async-http-client" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/swift-server/async-http-client.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.26.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		303E805D2E10943100196414 /* AsyncHTTPClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 30BC28852E109317008B53FC /* XCRemoteSwiftPackageReference "async-http-client" */;
+			productName = AsyncHTTPClient;
+		};
 		309DAE102DFFA66E00C2DAE9 /* AlertToast */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 309DAE0F2DFFA66E00C2DAE9 /* XCRemoteSwiftPackageReference "AlertToast" */;

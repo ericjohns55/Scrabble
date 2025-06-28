@@ -24,9 +24,9 @@ public class PlayerController : ScrabbleBaseController
 
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScrabbleWebListResponse<PlayerDTO>))]
-    public async Task<IActionResult> GetPlayers()
+    public async Task<IActionResult> GetPlayers([FromQuery] bool includeSelf = true)
     {
-        return Ok(await ExecuteToScrabbleListResponseAsync(() => _playerService.GetPlayers()));
+        return Ok(await ExecuteToScrabbleListResponseAsync(() => _playerService.GetPlayers(includeSelf)));
     }
 
     [HttpGet]
