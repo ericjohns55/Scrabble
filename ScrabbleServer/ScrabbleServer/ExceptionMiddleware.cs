@@ -32,16 +32,29 @@ public class ExceptionMiddleware
         context.Response.ContentType = MediaTypeNames.Application.Json;
         context.Response.StatusCode = (int) statusCode;
 
+        var stackTrace = rootException.StackTrace;
+
+        if (context.Request.Headers.TryGetValue("User-Agent", out var userAgent))
+        {
+            if (userAgent.Any(agent => agent?.Contains("swift-app") ?? false))
+            {
+                stackTrace = null; // exclude stack traces from swift app
+            }
+        }
+
         ScrabbleExceptionResponse errorResponse = new ScrabbleExceptionResponse()
         {
             StatusCode = (int)statusCode,
             Identifier = context.TraceIdentifier,
             Route = context.Request.Path,
             Message = rootException.Message,
-            Details = rootException.StackTrace ?? string.Empty
+            Details = stackTrace ?? string.Empty
         };
         
-        var serializedResponse = JsonSerializer.Serialize(errorResponse);
+        var serializedResponse = JsonSerializer.Serialize(errorResponse, new JsonSerializerOptions()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        });
         
         _logger.LogError($"[{context.TraceIdentifier}] Exception occured: {errorResponse.Message}\n{exception.StackTrace}");
         

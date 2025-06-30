@@ -62,6 +62,33 @@ class BaseWebClient {
         return try await requestWithBody(route: route, body: body, authToken: authToken, postRequest: false)
     }
     
+    func pingServer(route: String) async -> Bool {
+        let httpClient = HTTPClient(eventLoopGroupProvider: .singleton)
+        
+        defer {
+            Task {
+                try await httpClient.shutdown()
+            }
+        }
+        
+        do {
+            var request = HTTPClientRequest(url: "\(_serverUrl)\(route)")
+            request.method = .GET
+            
+            print("Hitting health checkpoint: \(request.url)")
+            
+            let httpResponse = try await httpClient.execute(request, timeout: .seconds(3))
+            let isOnline = (200...299).contains(httpResponse.status.code)
+            
+            print("Health status: \(isOnline ? "HEALTHY" : "UNHEALTHY")")
+            
+            return isOnline
+        } catch {
+            print("Server was either offline or unhealthy")
+            return false
+        }
+    }
+    
     private func requestNoBody<T: Decodable>(route: String, authToken: String?, getRequest: Bool = true) async throws -> T? {
         let httpClient = HTTPClient(eventLoopGroupProvider: .singleton)
         var response: T?
@@ -76,22 +103,25 @@ class BaseWebClient {
             var request = HTTPClientRequest(url: "\(_serverUrl)\(route)")
             request.method = getRequest ? .GET : .DELETE
             request.headers.add(contentsOf: ["Content-Type": "application/json"])
+            request.headers.add(contentsOf: ["User-Agent": "swift-app"])
             
             if let bearerToken = authToken {
                 request.headers.add(contentsOf: ["Authorization": "Bearer \(bearerToken)"])
             }
             
-            print("[REQUEST] \(String(describing: request.method).uppercased()) - \(route)")
+            logRequest(request: request)
             
             let httpResponse = try await httpClient.execute(request, timeout: .seconds(3))
             let responseBody = try await httpResponse.body.collect(upTo: 1024 * 1024)
             
             if (200...299).contains(httpResponse.status.code) {
-                response = try JSONDecoder().decode(T.self, from: responseBody)
-                print("[RESPONSE] \(httpResponse.status.code) - returning \(T.self)")
+                let responseEnvelope: ResponseEnvelope<T> = try JSONDecoder().decode(ResponseEnvelope<T>.self, from: responseBody)
+                response = responseEnvelope.data
+                
+                logSuccessfulResponse(response: httpResponse, responseObject: String(describing: T.self))
             } else {
                 let errorResponse = try JSONDecoder().decode(ErrorResponse.self, from: responseBody)
-                print("[RESPONSE] \(httpResponse.status.code) - \(errorResponse.message)")
+                logFailedResponse(response: httpResponse, errorEnvelope: errorResponse)
                 throw NSError(domain: "Server Error", code: Int(httpResponse.status.code), userInfo: ["error": errorResponse])
             }
         } catch {
@@ -115,12 +145,13 @@ class BaseWebClient {
             var request = HTTPClientRequest(url: "\(_serverUrl)\(route)")
             request.method = postRequest ? .POST : .PUT
             request.headers.add(contentsOf: ["Content-Type": "application/json"])
+            request.headers.add(contentsOf: ["User-Agent": "swift-app"])
             
             if let bearerToken = authToken {
                 request.headers.add(contentsOf: ["Authorization": "Bearer \(bearerToken)"])
             }
             
-            print("[REQUEST] \(String(describing: request.method).uppercased()) - \(route)")
+            logRequest(request: request, body: body)
             
             if (body != nil) {
                 let jsonData = try JSONEncoder().encode(body!)
@@ -129,13 +160,15 @@ class BaseWebClient {
             
             let httpResponse = try await httpClient.execute(request, timeout: .seconds(3))
             let responseBody = try await httpResponse.body.collect(upTo: 1024 * 1024)
-            
+                        
             if (200...299).contains(httpResponse.status.code) {
-                response = try JSONDecoder().decode(T.self, from: responseBody)
-                print("[RESPONSE] \(httpResponse.status.code) - returning \(T.self)")
+                let responseEnvelope: ResponseEnvelope<T> = try JSONDecoder().decode(ResponseEnvelope<T>.self, from: responseBody)
+                response = responseEnvelope.data
+                
+                logSuccessfulResponse(response: httpResponse, responseObject: String(describing: T.self))
             } else {
                 let errorResponse = try JSONDecoder().decode(ErrorResponse.self, from: responseBody)
-                print("[RESPONSE] \(httpResponse.status.code) - \(errorResponse.message)")
+                logFailedResponse(response: httpResponse, errorEnvelope: errorResponse)
                 throw NSError(domain: "Server Error", code: Int(httpResponse.status.code), userInfo: ["error": errorResponse])
             }
         } catch {
@@ -143,5 +176,24 @@ class BaseWebClient {
         }
         
         return response
+    }
+    
+    private func logRequest(request: HTTPClientRequest, body: Codable? = nil) {
+        let isAuthed = request.headers.contains(name: "Authorization")
+        
+        let header = isAuthed ? "[REQUEST - AUTHED]" : "[REQUEST - NO AUTH]"
+        let method = String(describing: request.method)
+        
+        let bodyType = body != nil ? " (\(String(describing: type(of: body!))))" : ""
+        
+        print("\(header) \(method)\(bodyType) - \(request.url)")
+    }
+    
+    private func logSuccessfulResponse(response: HTTPClientResponse, responseObject: String) {
+        print("[RESPONSE] \(response.status.code): \(responseObject) - \(response.url!)")
+    }
+    
+    private func logFailedResponse(response: HTTPClientResponse, errorEnvelope: ErrorResponse) {
+        print("[RESPONSE] \(response.status.code) - \(errorEnvelope.message)")
     }
 }

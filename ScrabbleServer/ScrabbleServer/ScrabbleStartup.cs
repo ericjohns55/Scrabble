@@ -16,6 +16,8 @@ var services = builder.Services;
 services.AddEndpointsApiExplorer();
 services.AddSwaggerGen();
 
+services.AddHealthChecks();
+
 services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
@@ -68,6 +70,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.MapHealthChecks("health");
 
 app.UseHttpsRedirection();
 

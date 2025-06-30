@@ -77,16 +77,7 @@ public class PlayerService
         return GenerateTokens(user.ToDTO());
     }
 
-    public TokensPayload GenerateTokens(PlayerDTO playerDto)
-    {
-        return new TokensPayload()
-        {
-            AccessToken = Cryptography.CreateJwtFromUser(playerDto, TokenType.Access),
-            RefreshToken = Cryptography.CreateJwtFromUser(playerDto, TokenType.Refresh)
-        };
-    }
-
-    public async Task<PlayerDTO> RegisterPlayer(CredentialsPayload credentialsPayload)
+    public async Task<TokensPayload> RegisterPlayer(CredentialsPayload credentialsPayload)
     {
         if (string.IsNullOrWhiteSpace(credentialsPayload.Username))
         {
@@ -110,7 +101,7 @@ public class PlayerService
         
         if (_scrabbleContext.DatabaseContext.Players.Any(player => player.Username == credentialsPayload.Username))
         {
-            throw new DisplayNameTakenException($"Username {credentialsPayload.Username} already taken.");
+            throw new DisplayNameTakenException($"Username '{credentialsPayload.Username}' already taken.");
         }
 
         var newPlayer = new Player()
@@ -126,6 +117,15 @@ public class PlayerService
         await _scrabbleContext.DatabaseContext.Players.AddAsync(newPlayer);
         await _scrabbleContext.DatabaseContext.SaveChangesAsync();
 
-        return newPlayer.ToDTO();
+        return GenerateTokens(newPlayer.ToDTO());
+    }
+
+    public TokensPayload GenerateTokens(PlayerDTO playerDto)
+    {
+        return new TokensPayload()
+        {
+            AccessToken = Cryptography.CreateJwtFromUser(playerDto, TokenType.Access),
+            RefreshToken = Cryptography.CreateJwtFromUser(playerDto, TokenType.Refresh)
+        };
     }
 }

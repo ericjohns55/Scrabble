@@ -42,7 +42,7 @@ public class AuthenticationController : ScrabbleBaseController
     [HttpPost]
     [AllowAnonymous]
     [Route("register")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScrabbleWebResponse<PlayerDTO>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScrabbleWebResponse<TokensPayload>))]
     public async Task<IActionResult> Register([FromBody] CredentialsPayload credentialsPayload)
     {
         return Ok(await ExecuteToScrabbleResponseAsync(() => _playerService.RegisterPlayer(credentialsPayload)));
