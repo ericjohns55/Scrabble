@@ -27,15 +27,24 @@ class BaseWebClient {
     private var _bearerToken: String?
     private var _refreshToken: String?
     
-    init (serverUrl: String, authToken: String?, refreshToken: String?) {
+    private let jsonDecoder = JSONDecoder()
+    
+    init(serverUrl: String, authToken: String?, refreshToken: String?) {
         _serverUrl = serverUrl
         _bearerToken = authToken
         _refreshToken = refreshToken
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"
+        dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        
+        jsonDecoder.dateDecodingStrategy = .formatted(dateFormatter)
     }
     
-    func updateTokens(authToken: String?, refreshToken: String?) {
-        _bearerToken = authToken
-        _refreshToken = refreshToken
+    func updateTokens(tokensPayload: TokensPayload?) {
+        _bearerToken = tokensPayload?.accessToken
+        _refreshToken = tokensPayload?.refreshToken
     }
     
     func getAuthToken() -> String? {
@@ -75,12 +84,12 @@ class BaseWebClient {
             var request = HTTPClientRequest(url: "\(_serverUrl)\(route)")
             request.method = .GET
             
-            print("Hitting health checkpoint: \(request.url)")
+            logRequest(request: request)
             
             let httpResponse = try await httpClient.execute(request, timeout: .seconds(3))
             let isOnline = (200...299).contains(httpResponse.status.code)
             
-            print("Health status: \(isOnline ? "HEALTHY" : "UNHEALTHY")")
+            logSuccessfulResponse(response: httpResponse, responseObject: isOnline ? "HEALTHY" : "UNHEALTHY")
             
             return isOnline
         } catch {
@@ -115,12 +124,12 @@ class BaseWebClient {
             let responseBody = try await httpResponse.body.collect(upTo: 1024 * 1024)
             
             if (200...299).contains(httpResponse.status.code) {
-                let responseEnvelope: ResponseEnvelope<T> = try JSONDecoder().decode(ResponseEnvelope<T>.self, from: responseBody)
+                let responseEnvelope: ResponseEnvelope<T> = try jsonDecoder.decode(ResponseEnvelope<T>.self, from: responseBody)
                 response = responseEnvelope.data
                 
                 logSuccessfulResponse(response: httpResponse, responseObject: String(describing: T.self))
             } else {
-                let errorResponse = try JSONDecoder().decode(ErrorResponse.self, from: responseBody)
+                let errorResponse = try jsonDecoder.decode(ErrorResponse.self, from: responseBody)
                 logFailedResponse(response: httpResponse, errorEnvelope: errorResponse)
                 throw NSError(domain: "Server Error", code: Int(httpResponse.status.code), userInfo: ["error": errorResponse])
             }
@@ -162,12 +171,12 @@ class BaseWebClient {
             let responseBody = try await httpResponse.body.collect(upTo: 1024 * 1024)
                         
             if (200...299).contains(httpResponse.status.code) {
-                let responseEnvelope: ResponseEnvelope<T> = try JSONDecoder().decode(ResponseEnvelope<T>.self, from: responseBody)
+                let responseEnvelope: ResponseEnvelope<T> = try jsonDecoder.decode(ResponseEnvelope<T>.self, from: responseBody)
                 response = responseEnvelope.data
                 
                 logSuccessfulResponse(response: httpResponse, responseObject: String(describing: T.self))
             } else {
-                let errorResponse = try JSONDecoder().decode(ErrorResponse.self, from: responseBody)
+                let errorResponse = try jsonDecoder.decode(ErrorResponse.self, from: responseBody)
                 logFailedResponse(response: httpResponse, errorEnvelope: errorResponse)
                 throw NSError(domain: "Server Error", code: Int(httpResponse.status.code), userInfo: ["error": errorResponse])
             }

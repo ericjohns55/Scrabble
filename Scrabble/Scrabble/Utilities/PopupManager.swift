@@ -66,3 +66,36 @@ class PopupManager: ObservableObject {
         showActionSheet = true
     }
 }
+
+extension View {
+    func withPopupManager(_ popupManager: PopupManager) -> some View {
+        self
+            .confirmationDialog(popupManager.confirmationDialogOptions.message,
+                                isPresented: Binding(get: { popupManager.showConfirmationDialog },
+                                                     set: { popupManager.showConfirmationDialog = $0 }),
+                                 titleVisibility: popupManager.confirmationDialogOptions.displayTitle ? .visible : .hidden) {
+                 Button("Confirm", role: .destructive) {
+                     popupManager.confirmationDialogOptions.confirmAction()
+                 }
+                 
+                 Button("Cancel", role: .cancel) {
+                     popupManager.confirmationDialogOptions.cancelAction()
+                 }
+             }
+             .actionSheet(isPresented: Binding(get: { popupManager.showActionSheet },
+                                               set: { popupManager.showActionSheet = $0 })) {
+                 ActionSheet(title: Text(popupManager.actionSheetOptions.title),
+                             message: Text(popupManager.actionSheetOptions.message),
+                             buttons: popupManager.actionSheetOptions.buttons)
+             }
+             .toast(isPresenting: Binding(get: { popupManager.showToast },
+                                          set: { popupManager.showToast = $0 }),
+                    duration: popupManager.toastOptions.toastDuration,
+                    tapToDismiss: true) {
+                 AlertToast(displayMode: .alert,
+                            type: popupManager.toastOptions.toastType,
+                            title: popupManager.toastOptions.toastText,
+                            style: .style(backgroundColor: popupManager.toastOptions.toastColor))
+             }
+    }
+}

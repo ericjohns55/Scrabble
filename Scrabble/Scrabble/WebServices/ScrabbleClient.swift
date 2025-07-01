@@ -24,8 +24,16 @@ class ScrabbleClient {
         httpClient = BaseWebClient(serverUrl: serverUrl, authToken: nil, refreshToken: refreshToken)
     }
     
-    var authToken: String? {
+    private var authToken: String? {
         httpClient.getAuthToken()
+    }
+    
+    public func hasRefreshToken() -> Bool {
+        return httpClient.getRefreshToken() != nil
+    }
+    
+    public func isAuthenticated() -> Bool {
+        return authenticated
     }
     
     public func pingServer() async -> Bool {
@@ -184,15 +192,23 @@ class ScrabbleClient {
         return response.data != nil
     }
     
+    public func removeCredentials() {
+        self.httpClient.updateTokens(tokensPayload: nil)
+        self.authenticated = false
+        
+        KeychainHelper.shared.delete("refreshToken")
+    }
+    
     private func queryAndSaveTokens(tokensRequest: @escaping () async throws -> TokensPayload?) async -> ServerResponse<TokensPayload> {
         let serverResponse: ServerResponse<TokensPayload> = await executeWithServerResponse(
             request: {
                try await tokensRequest()
             },
             successFunction: { response in
-                self.httpClient.updateTokens(authToken: response.accessToken, refreshToken: response.refreshToken)
-                self.updateSavedTokens(tokensPayload: response)
+                self.httpClient.updateTokens(tokensPayload: response)
                 self.authenticated = true
+                
+                KeychainHelper.shared.set(response.refreshToken, forKey: "refreshToken")
             },
             failureFunction: { error in
                 self.removeCredentials()
@@ -200,12 +216,6 @@ class ScrabbleClient {
         )
         
         return serverResponse
-    }
-    
-    public func removeCredentials() {
-        self.httpClient.updateTokens(authToken: nil, refreshToken: nil)
-        self.updateSavedTokens(tokensPayload: nil)
-        self.authenticated = false
     }
     
     private func executeWithServerResponse<T: Decodable>(request: @escaping () async throws -> T?, successFunction: ((T) -> Void)? = nil, failureFunction: ((ErrorResponse) -> Void)? = nil) async -> ServerResponse<T> {
@@ -233,10 +243,5 @@ class ScrabbleClient {
         }
         
         return ServerResponse(data: data, errorMessage: errorMessage)
-    }
-    
-    private func updateSavedTokens(tokensPayload: TokensPayload?) {
-        print("TODO - save refresh token")
-        // TODO
     }
 }

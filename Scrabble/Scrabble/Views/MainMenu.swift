@@ -29,31 +29,7 @@ struct MainMenu: View {
                     GameView(appViewModel: appViewModel)
             }
         }
-        // TODO: add an extension method for this
-        .confirmationDialog(popupManager.confirmationDialogOptions.message,
-                             isPresented: $popupManager.showConfirmationDialog,
-                             titleVisibility: popupManager.confirmationDialogOptions.displayTitle ? .visible : .hidden) {
-             Button("Confirm", role: .destructive) {
-                 popupManager.confirmationDialogOptions.confirmAction()
-             }
-             
-             Button("Cancel", role: .cancel) {
-                 popupManager.confirmationDialogOptions.cancelAction()
-             }
-         }
-         .actionSheet(isPresented: $popupManager.showActionSheet) {
-             ActionSheet(title: Text(popupManager.actionSheetOptions.title),
-                         message: Text(popupManager.actionSheetOptions.message),
-                         buttons: popupManager.actionSheetOptions.buttons)
-         }
-         .toast(isPresenting: $popupManager.showToast,
-                duration: popupManager.toastOptions.toastDuration,
-                tapToDismiss: true) {
-             AlertToast(displayMode: .alert,
-                        type: popupManager.toastOptions.toastType,
-                        title: popupManager.toastOptions.toastText,
-                        style: .style(backgroundColor: popupManager.toastOptions.toastColor))
-         }
+        .withPopupManager(popupManager)
     }
     
     @ViewBuilder
@@ -86,7 +62,6 @@ struct MainMenu: View {
                 
                 Button(action: {
                     appViewModel.currentPage = .multiplayer
-//                    popupManager.displayToast(text: "Not implemented", color: .red)
                 }) {
                     Text("Multiplayer")
                         .frame(maxWidth: scaledWidth, maxHeight: MainMenu.buttonHeight)

@@ -36,16 +36,16 @@ struct GameMovePayload: Codable {
 }
 
 struct Player: Decodable {
-    let id: Int
-    let uuid: String
+    let id: UInt64
+    let uuid: UUID
     let username: String
     let profilePicture: String?
-    let createdDate: String // Date // TODO: decode dates properly
-    let updatedDate: String // Date
+    let createdDate: Date
+    let updatedDate: Date
 }
 
 struct Game: Decodable {
-    let id: Int
+    let id: UInt64
     let uuid: String
     let seed: UInt64
     let createdAt: Date
@@ -62,7 +62,7 @@ struct Game: Decodable {
 }
 
 struct GameMove: Decodable {
-    let id: Int
+    let id: UInt64
     let playerId: UInt64
     let gameId: UInt64
     let sentAt: Date

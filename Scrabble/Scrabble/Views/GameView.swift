@@ -70,30 +70,7 @@ struct GameView: View {
                 ActiveGameView(active: $inSummaryView, boardRender: $boardRender)
             }
         }
-        .confirmationDialog(popupManager.confirmationDialogOptions.message,
-                             isPresented: $popupManager.showConfirmationDialog,
-                             titleVisibility: popupManager.confirmationDialogOptions.displayTitle ? .visible : .hidden) {
-             Button("Confirm", role: .destructive) {
-                 popupManager.confirmationDialogOptions.confirmAction()
-             }
-             
-             Button("Cancel", role: .cancel) {
-                 popupManager.confirmationDialogOptions.cancelAction()
-             }
-         }
-         .actionSheet(isPresented: $popupManager.showActionSheet) {
-             ActionSheet(title: Text(popupManager.actionSheetOptions.title),
-                         message: Text(popupManager.actionSheetOptions.message),
-                         buttons: popupManager.actionSheetOptions.buttons)
-         }
-         .toast(isPresenting: $popupManager.showToast,
-                duration: popupManager.toastOptions.toastDuration,
-                tapToDismiss: true) {
-             AlertToast(displayMode: .alert,
-                        type: popupManager.toastOptions.toastType,
-                        title: popupManager.toastOptions.toastText,
-                        style: .style(backgroundColor: popupManager.toastOptions.toastColor))
-         }
+        .withPopupManager(popupManager)
     }
     
     @ViewBuilder
@@ -258,7 +235,7 @@ struct GameView: View {
                         .border(.gray)
                         .onTapGesture {
                             // TODO: download image
-                            popupManager.displayToast(text: "Downloading image...", color: .gray)
+                            popupManager.displayToast(text: "NOT IMPLEMENTED - Downloading image...", color: .gray)
                         }
                     
                     Text("Final Board")
