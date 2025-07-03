@@ -154,38 +154,38 @@ class ScrabbleClient {
         return serverResponse
     }
     
-    public func isNameTaken() async -> ServerResponse<Bool> {
+    public func isNameTaken(proposedName: String) async -> Bool {
         let serverResponse: ServerResponse<Bool> = await executeWithServerResponse(
             request: {
-                try await self.httpClient.getRequest(route: "authentication/name-taken", authToken: nil)
+                try await self.httpClient.getRequest(route: "authentication/name-taken?displayName=\(proposedName)", authToken: nil)
             }
         )
         
-        return serverResponse
+        return serverResponse.data ?? false
     }
     
     public func register(username: String, password: String) async -> ServerResponse<TokensPayload> {
         let postBody = CredentialsPayload(username: username, password: password)
         
-        let tokensResponse: ServerResponse<TokensPayload> = await queryAndSaveTokens(tokensRequest: {
+        let tokensResponse: ServerResponse<TokensPayload> = await queryAndUpdateTokens(tokensRequest: {
             try await self.httpClient.postRequest(route: "authentication/register", authToken: nil, body: postBody)!
         })
         
         return tokensResponse
     }
     
-    public func login(username: String, password: String) async -> Bool {
+    public func login(username: String, password: String) async -> ServerResponse<TokensPayload> {
         let postBody = CredentialsPayload(username: username, password: password)
         
-        let response: ServerResponse<TokensPayload> = await queryAndSaveTokens(tokensRequest: {
+        let tokensResponse: ServerResponse<TokensPayload> = await queryAndUpdateTokens(tokensRequest: {
             try await self.httpClient.postRequest(route: "authentication/login", authToken: nil, body: postBody)
         })
         
-        return response.data != nil
+        return tokensResponse
     }
     
     public func refreshTokens() async -> Bool {
-        let response: ServerResponse<TokensPayload> = await queryAndSaveTokens(tokensRequest: {
+        let response: ServerResponse<TokensPayload> = await queryAndUpdateTokens(tokensRequest: {
             try await self.httpClient.postRequest(route: "authentication/refresh", authToken: self.httpClient.getRefreshToken(), body: nil)
         })
         
@@ -199,7 +199,7 @@ class ScrabbleClient {
         KeychainHelper.shared.delete("refreshToken")
     }
     
-    private func queryAndSaveTokens(tokensRequest: @escaping () async throws -> TokensPayload?) async -> ServerResponse<TokensPayload> {
+    private func queryAndUpdateTokens(tokensRequest: @escaping () async throws -> TokensPayload?) async -> ServerResponse<TokensPayload> {
         let serverResponse: ServerResponse<TokensPayload> = await executeWithServerResponse(
             request: {
                try await tokensRequest()
@@ -207,8 +207,6 @@ class ScrabbleClient {
             successFunction: { response in
                 self.httpClient.updateTokens(tokensPayload: response)
                 self.authenticated = true
-                
-                KeychainHelper.shared.set(response.refreshToken, forKey: "refreshToken")
             },
             failureFunction: { error in
                 self.removeCredentials()

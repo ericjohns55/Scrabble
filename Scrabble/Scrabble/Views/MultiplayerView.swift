@@ -8,12 +8,16 @@
 import SwiftUI
 import AlertToast
 
-enum ServerPage {
-    case online_authed, online_unauthed, pinging, offline
+enum AuthStatus {
+    case offline, unauthorized, authorized
 }
 
 enum AuthTab {
     case login, register
+}
+
+enum FocusedTextField {
+    case username, password, confirmPassword
 }
 
 struct MultiplayerView: View {
@@ -23,17 +27,36 @@ struct MultiplayerView: View {
     private let inputColor = Color(red: 0.05, green: 0.05, blue: 0.05)
     private let modalColor = Color(red: 0.12, green: 0.12, blue: 0.12)
     
-    @State private var serverPage: ServerPage = .pinging
+    @State private var AuthStatus: AuthStatus = .unauthorized
+    @State private var selectedTab: AuthTab = .login
+    
+    @State private var pingingServer: Bool = false
+    
     @State private var currentUser: Player? = nil
     @State private var username: String = ""
     @State private var password: String = ""
     @State private var confirmPassword: String = ""
-    @State private var selectedTab: AuthTab = .login
+    @State private var rememberUser: Bool = false
+    @State private var usernameTaken: Bool = false
     
     @StateObject private var popupManager = PopupManager()
     
-    var buttonsEnabled: Bool {
-        username.isEmpty || password.isEmpty
+    @FocusState private var focusedTextField: FocusedTextField?
+    
+    var usernameLengthValid: Bool {
+        return username.count >= 3 && username.count <= 32
+    }
+    
+    var validCharacters: Bool {
+        return username.range(of: "^[a-zA-Z0-9_\\-\\.]+$", options: .regularExpression) != nil
+    }
+    
+    var loginRegisterButtonsDisabled: Bool {
+        if (selectedTab == .register) {
+            return !usernameLengthValid || !validCharacters || password.isEmpty || confirmPassword != password || usernameTaken
+        } else {
+            return username.isEmpty || password.isEmpty
+        }
     }
     
     init(appViewModel: AppViewModel) {
@@ -51,32 +74,31 @@ struct MultiplayerView: View {
     
     var body: some View {
         Group {
-            switch (serverPage) {
+            switch (AuthStatus) {
                 // TODO: check for auth in pinging view and skip online_unauthed if good
                 case .offline:
                     NoConnectionView()
-                case .pinging:
-                    PingingView()
-                case .online_unauthed:
+                case .unauthorized:
                     LoginOrRegisterView()
-                case .online_authed:
+                case .authorized:
                     AuthedMultiplayerView(
                         appViewModel: appViewModel,
                         scrabbleClient: scrabbleClient,
                         currentUser: currentUser!,
                         logoutCallback: {
-                            self.serverPage = .online_unauthed
+                            self.AuthStatus = .unauthorized
                             self.scrabbleClient.removeCredentials()
                             self.currentUser = nil
                         }
                     )
             }
         }
+        .ignoresSafeArea(.keyboard)
         .withPopupManager(popupManager)
         .task {
             await pingServer()
             
-            if (serverPage == .online_unauthed && scrabbleClient.hasRefreshToken()) {
+            if (AuthStatus == .unauthorized && scrabbleClient.hasRefreshToken()) {
                 if (await scrabbleClient.refreshTokens()) {
                     await updateSelf()
                 }
@@ -90,6 +112,11 @@ struct MultiplayerView: View {
             let buttonSize = geometry.size.width * 0.5
             
             VStack {
+                Text("Authentication")
+                    .foregroundStyle(.white)
+                    .font(.title)
+                    .bold()
+                
                 VStack(spacing: 0) {
                     Picker("", selection: $selectedTab) {
                         Text("Login").tag(AuthTab.login)
@@ -101,22 +128,46 @@ struct MultiplayerView: View {
                     
                     VStack(spacing: 12) {
                         TextField("Username", text: $username)
+                            .focused($focusedTextField, equals: .username)
+                            .submitLabel(.next)
                             .padding(12)
                             .background(inputColor)
                             .cornerRadius(8)
                             .textInputAutocapitalization(.none)
                             .autocorrectionDisabled()
+                            .onChange(of: username) {
+                                if (selectedTab == .register) {
+                                    Task {
+                                        usernameTaken = await scrabbleClient.isNameTaken(proposedName: username)
+                                    }
+                                }
+                            }
                         
                         SecureField("Password", text: $password)
+                            .focused($focusedTextField, equals: .password)
+                            .submitLabel(.next)
                             .padding(12)
                             .background(inputColor)
                             .cornerRadius(8)
                         
+                        if (selectedTab == .login) {
+                            Toggle(isOn: $rememberUser) {
+                                Text("Remember me")
+                            }
+                            .frame(width: buttonSize)
+                        }
+                        
                         if selectedTab == .register {
                             SecureField("Confirm Password", text: $confirmPassword)
+                                .focused($focusedTextField, equals: .confirmPassword)
+                                .submitLabel(.next)
                                 .padding(12)
                                 .background(inputColor)
                                 .cornerRadius(8)
+                            
+                            UsernameLengthView()
+                            UsernameValid()
+                            PasswordsMatch()
                         }
                         
                         Button(action: {
@@ -134,10 +185,24 @@ struct MultiplayerView: View {
                         .frame(width: buttonSize, height: MainMenu.buttonHeight)
                         .contentShape(Rectangle())
                         .border(.gray)
-                        .disabled(buttonsEnabled)
+                        .disabled(loginRegisterButtonsDisabled)
                         .padding(.bottom, 12)
                     }
                     .padding(.horizontal, 12)
+                    .onSubmit {
+                        switch focusedTextField {
+                        case .username:
+                            focusedTextField = .password
+                        case .password:
+                            if (selectedTab == .register) {
+                                focusedTextField = .confirmPassword
+                            } else {
+                                focusedTextField = nil
+                            }
+                        default:
+                            break
+                        }
+                    }
                 }
                 .background(modalColor)
                 .cornerRadius(12)
@@ -160,14 +225,41 @@ struct MultiplayerView: View {
     }
     
     @ViewBuilder
-    func PingingView() -> some View {
-        VStack {
-            Text("Waiting for connection...")
-                .foregroundStyle(.white)
-                .font(.title)
-                .bold()
-            
-            ProgressView()
+    func UsernameLengthView() -> some View {
+        if (username.count < 3) {
+            Label("Username is too short", systemImage: "x.circle.fill")
+                .foregroundStyle(.red)
+        } else if (username.count > 32) {
+            Label("Username is too long", systemImage: "x.circle.fill")
+                .foregroundStyle(.red)
+        } else {
+            Label("Username length valid", systemImage: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+        }
+    }
+    
+    @ViewBuilder
+    func UsernameValid() -> some View {
+        if (!validCharacters) {
+            Label("Username has invalid characters", systemImage: "x.circle.fill")
+                .foregroundStyle(.red)
+        } else if (usernameTaken) {
+            Label("Username is taken", systemImage: "x.circle.fill")
+                .foregroundStyle(.red)
+        } else {
+            Label("Username is valid", systemImage: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+        }
+    }
+    
+    @ViewBuilder
+    func PasswordsMatch() -> some View {
+        if (password != confirmPassword) {
+            Label("Passwords do not match", systemImage: "x.circle.fill")
+                .foregroundStyle(.red)
+        } else {
+            Label("Passwords match", systemImage: "checkmark.circle.fill")
+                .foregroundStyle(.green)
         }
     }
     
@@ -181,6 +273,10 @@ struct MultiplayerView: View {
                     .foregroundStyle(.red)
                     .font(.title)
                     .bold()
+                
+                if (pingingServer) {
+                    ProgressView()
+                }
                 
                 Button(action: {
                     Task {
@@ -210,15 +306,19 @@ struct MultiplayerView: View {
     }
     
     private func loginCallback() async {
-        let loginSuccessful = await scrabbleClient.login(username: username, password: password)
+        let tokensResponse = await scrabbleClient.login(username: username, password: password)
         
-        if (!loginSuccessful) {
+        if (tokensResponse.data == nil) {
             popupManager.displayToast(text: "Invalid username or password", color: .red)
             
             scrabbleClient.removeCredentials()
             self.currentUser = nil
         } else {
             await updateSelf()
+            
+            if (rememberUser) {
+                KeychainHelper.shared.set(tokensResponse.data!.refreshToken, forKey: "refreshToken")
+            }
         }
         
         self.password = ""
@@ -230,28 +330,33 @@ struct MultiplayerView: View {
             return
         }
         
-        let response = await scrabbleClient.register(username: username, password: password)
+        let tokensResponse = await scrabbleClient.register(username: username, password: password)
         
-        if (response.data == nil) {
-            popupManager.displayToast(text: response.errorMessage, color: .red)
+        if (tokensResponse.data == nil) {
+            popupManager.displayToast(text: tokensResponse.errorMessage, color: .red)
             
             scrabbleClient.removeCredentials()
             self.currentUser = nil
         } else {
             await updateSelf()
+            
+            KeychainHelper.shared.set(tokensResponse.data!.refreshToken, forKey: "refreshToken")
         }
         
         self.password = ""
+        self.confirmPassword = ""
     }
     
     private func pingServer() async {
-        serverPage = .pinging
+        pingingServer = true
         
         if (await scrabbleClient.pingServer()) {
-            serverPage = .online_unauthed
+            AuthStatus = .unauthorized
         } else {
-            serverPage = .offline
+            AuthStatus = .offline
         }
+        
+        pingingServer = false
     }
     
     private func updateSelf() async {
@@ -261,7 +366,7 @@ struct MultiplayerView: View {
             currentUser = self
             
             if (scrabbleClient.isAuthenticated()) {
-                serverPage = .online_authed
+                AuthStatus = .authorized
             }
         } else {
             currentUser = nil

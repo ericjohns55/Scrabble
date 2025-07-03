@@ -89,7 +89,7 @@ public class PlayerService
             throw new ArgumentException("Password is required.");
         }
 
-        if (credentialsPayload.Username.Length < 3 || credentialsPayload.Username.Length > 64)
+        if (credentialsPayload.Username.Length < 3 || credentialsPayload.Username.Length > 32)
         {
             throw new InvalidDisplayNameException("Username must be between 3-64 characters.");
         }
