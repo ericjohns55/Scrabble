@@ -156,22 +156,26 @@ class GameViewModel: ObservableObject {
         if (canShuffle()) {
             playerTiles.shuffle()
         } else {
-            for (_, currentTile) in playerTiles.enumerated() {
-                if (currentTile.tileState == .placedByPlayer) {
-                    let tileIndex = playerTiles.firstIndex(of: currentTile)!
-                    
-                    playerTiles[tileIndex].boardPosition = nil
-                    playerTiles[tileIndex].offset = .zero
-                    playerTiles[tileIndex].tileState = .inPlayerHand
-                    
-                    if let currentBoardSquare = boardManager.getBoardSquareByTileId(currentTile.id) {
-                        currentBoardSquare.tile = nil
-                    }
+            recallTiles()
+        }
+    }
+    
+    func recallTiles() {
+        for (_, currentTile) in playerTiles.enumerated() {
+            if (currentTile.tileState == .placedByPlayer) {
+                let tileIndex = playerTiles.firstIndex(of: currentTile)!
+                
+                playerTiles[tileIndex].boardPosition = nil
+                playerTiles[tileIndex].offset = .zero
+                playerTiles[tileIndex].tileState = .inPlayerHand
+                
+                if let currentBoardSquare = boardManager.getBoardSquareByTileId(currentTile.id) {
+                    currentBoardSquare.tile = nil
                 }
             }
-            
-            wordValidator.updateTileState()
         }
+        
+        wordValidator.updateTileState()
     }
     
     func commitTiles() {

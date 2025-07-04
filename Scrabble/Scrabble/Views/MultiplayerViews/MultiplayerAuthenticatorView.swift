@@ -62,9 +62,10 @@ struct MultiplayerAuthenticatorView: View {
     init(appViewModel: AppViewModel) {
         self.appViewModel = appViewModel
         
+        username = KeychainHelper.shared.read("lastAuthenticatedPlayer") as String? ?? ""
         let refreshToken = KeychainHelper.shared.read("refreshToken") as String?
         let serverUrl = ""
-                
+        
         if (refreshToken != nil) {
             self.scrabbleClient = ScrabbleClient(serverUrl: serverUrl, refreshToken: refreshToken!)
         } else {
@@ -318,6 +319,7 @@ struct MultiplayerAuthenticatorView: View {
             
             if (rememberUser) {
                 KeychainHelper.shared.set(tokensResponse.data!.refreshToken, forKey: "refreshToken")
+                KeychainHelper.shared.set(currentUser?.username, forKey: "lastAuthenticatedPlayer")
             }
         }
         
@@ -341,6 +343,7 @@ struct MultiplayerAuthenticatorView: View {
             await updateSelf()
             
             KeychainHelper.shared.set(tokensResponse.data!.refreshToken, forKey: "refreshToken")
+            KeychainHelper.shared.set(currentUser?.username, forKey: "lastAuthenticatedPlayer")
         }
         
         self.password = ""

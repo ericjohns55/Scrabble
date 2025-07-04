@@ -196,6 +196,7 @@ class ScrabbleClient {
         self.httpClient.updateTokens(tokensPayload: nil)
         self.authenticated = false
         
+        KeychainHelper.shared.delete("lastAuthenticatedPlayer")
         KeychainHelper.shared.delete("refreshToken")
     }
     

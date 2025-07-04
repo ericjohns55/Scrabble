@@ -59,7 +59,11 @@ struct GameView: View {
         let boardState = BoardState()
         self._boardState = StateObject(wrappedValue: boardState)
         
-        self.gameViewModel = GameViewModel(boardIdentifier: appViewModel.boardIdentifier, boardState: boardState, wordSet: appViewModel.getWordSet(), seed: nil)
+        self.gameViewModel = GameViewModel(
+            boardIdentifier: appViewModel.boardIdentifier!,
+            boardState: boardState,
+            wordSet: appViewModel.getWordSet(),
+            seed: nil)
     }
     
     var body: some View {
@@ -147,16 +151,20 @@ struct GameView: View {
                         popupManager.displayConfirmationDialog(message: "Are you sure you want to end the game?", confirmAction: {
                             appViewModel.endGame(finalGameStats: gameViewModel.gameStats)
                             
-                            // TODO: add argument for showing points on the tiles and then not render them here
+                            gameViewModel.recallTiles()
+                            
+                            TileView.inRenderMode = true
                             
                             let boardView = BoardView(viewModel: gameViewModel, dragManager: dragManager)
                                 .aspectRatio(1, contentMode: .fit)
-                                .frame(width: 512, height: 512)
+                                .frame(width: 640, height: 640)
                             
                             let renderer = ImageRenderer(content: boardView)
                             if let image = renderer.uiImage {
                                 $boardRender.wrappedValue = image
                             }
+                            
+                            TileView.inRenderMode = false
                             
                             active.wrappedValue = true
                         })
@@ -228,7 +236,7 @@ struct GameView: View {
                 let imageWidth = geo.size.width * 0.75
                 
                 VStack(spacing: 8) {
-                    Image(uiImage: boardRender ?? BoardIdentifier.getImage(appViewModel.boardIdentifier))
+                    Image(uiImage: boardRender ?? BoardIdentifier.getImage(appViewModel.boardIdentifier!))
                         .resizable()
                         .scaledToFit()
                         .frame(width: imageWidth, height: imageWidth)
@@ -244,7 +252,7 @@ struct GameView: View {
                         .padding(.bottom, 24)
                     
                     Button(action: {
-                        appViewModel.currentPage = .boardSelector
+                        appViewModel.boardIdentifier = nil
                     }) {
                         Text("Board Selector")
                             .frame(maxWidth: buttonWidth, maxHeight: MainMenu.buttonHeight)
@@ -256,6 +264,7 @@ struct GameView: View {
                     
                     Button(action: {
                         appViewModel.currentPage = .mainMenu
+                        appViewModel.boardIdentifier = nil
                     }) {
                         Text("Main Menu")
                             .frame(maxWidth: buttonWidth, maxHeight: MainMenu.buttonHeight)

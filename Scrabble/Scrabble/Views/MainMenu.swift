@@ -21,12 +21,12 @@ struct MainMenu: View {
             switch (appViewModel.currentPage) {
                 case .mainMenu:
                     MainMenuView()
-                case .boardSelector:
-                    BoardSelectorView(appViewModel: appViewModel)
+                case .singleplayer:
+                    SingleplayerView(appViewModel: appViewModel)
                 case .multiplayer:
                     MultiplayerAuthenticatorView(appViewModel: appViewModel)
-                case .game:
-                    GameView(appViewModel: appViewModel)
+                case .stats:
+                    StatsView(appViewModel: appViewModel)
             }
         }
         .withPopupManager(popupManager)
@@ -43,7 +43,7 @@ struct MainMenu: View {
                     .font(.title)
                     .bold()
                 
-                Image(uiImage: BoardIdentifier.getImage(appViewModel.boardIdentifier))
+                Image(uiImage: BoardIdentifier.getImage(.diamond11))
                     .resizable()
                     .scaledToFit()
                     .frame(width: scaledWidth, height: scaledWidth)
@@ -51,7 +51,7 @@ struct MainMenu: View {
                     .padding(.bottom, 4)
                 
                 Button(action: {
-                    appViewModel.currentPage = .boardSelector
+                    appViewModel.currentPage = .singleplayer
                 }) {
                     Text("Single Player")
                         .frame(maxWidth: scaledWidth, maxHeight: MainMenu.buttonHeight)
@@ -71,6 +71,7 @@ struct MainMenu: View {
                 .padding(.horizontal, 4)
                 
                 Button(action: {
+//                    appViewModel.currentPage = .stats
                     popupManager.displayToast(text: "Not implemented", color: .red)
                 }) {
                     Text("View Stats")

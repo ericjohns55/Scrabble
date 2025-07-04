@@ -1,5 +1,5 @@
 //
-//  BoardSelectorView.swift
+//  SingleplayerView.swift
 //  Scrabble
 //
 //  Created by Eric Johns on 6/21/25.
@@ -7,14 +7,23 @@
 
 import SwiftUI
 
-struct BoardSelectorView: View {
-    private var appViewModel: AppViewModel
+struct SingleplayerView: View {
+    @ObservedObject private var appViewModel: AppViewModel
     
     init(appViewModel: AppViewModel) {
         self.appViewModel = appViewModel
     }
     
     var body: some View {
+        if (appViewModel.boardIdentifier == nil) {
+            BoardSelectorView()
+        } else {
+            GameView(appViewModel: appViewModel)
+        }
+    }
+    
+    @ViewBuilder
+    private func BoardSelectorView() -> some View {
         GeometryReader { geometry in
             let imageSize = geometry.size.width * 0.4
             
@@ -78,6 +87,5 @@ struct BoardSelectorView: View {
     
     private func loadBoard(boardIdentifier: BoardIdentifier) {
         appViewModel.boardIdentifier = boardIdentifier
-        appViewModel.currentPage = .game
     }
 }

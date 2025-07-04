@@ -50,6 +50,8 @@ struct TileView: View {
     
     let cornerRadius: CGFloat = 8
     
+    static var inRenderMode: Bool = false
+    
     var body: some View {
         ZStack(alignment: .topTrailing) {
             let notCommitted = tile.tileState != .committedToBoard
@@ -61,17 +63,19 @@ struct TileView: View {
                 bottomRight: tile.cornerRadii.bottomRight ? 0 : cornerRadius)
             
             Text(tile.letter)
-                .font(.title2.bold())
+                .font(TileView.inRenderMode ? .title.bold() : .title2.bold())
                 .foregroundStyle(notCommitted ? Color.black : Color.white)
                 .frame(width: size, height: size)
                 .background(notCommitted ? Color.yellow : Color.gray)
                 .clipShape(roundedRectangle)
                 .overlay(roundedRectangle.stroke(Color.black, lineWidth: 1))
             
-            Text("\(tile.points)")
-                .font(.caption2)
-                .foregroundStyle(notCommitted ? Color.black : Color.white)
-                .padding(4)
+            if (!TileView.inRenderMode) {
+                Text("\(tile.points)")
+                    .font(.caption2)
+                    .foregroundStyle(notCommitted ? Color.black : Color.white)
+                    .padding(4)
+            }
         }
     }
 }

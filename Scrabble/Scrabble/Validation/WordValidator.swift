@@ -77,9 +77,6 @@ class WordValidator: ObservableObject {
         
         if (placedTiles.count != 1) {
             if (allSameRow) {
-                // check consecutive rows
-                print("Checking for vertical words in created row...")
-                
                 let placedTilesSorted = placedTiles.sorted(by: { $0.boardPosition!.col < $1.boardPosition!.col })
                 
                 if (!game.boardManager.arePlacedTilesConsecutive(placedTilesSorted, wordOrientation: .horizontal)) {
@@ -97,15 +94,10 @@ class WordValidator: ObservableObject {
                 // find the word created horizontally (guaranteed to only have one)
                 if let createdWord = game.boardManager.getWordHorizontal(placedTilesSorted.first!.id) {
                     allCreatedWords.append(createdWord)
-                } else {
-                    print("Could not find horizontally created word")
                 }
             }
             
             if (allSameColumn) {
-                // check consecutive cols
-                print("Checking for horizontal words in created column...")
-                
                 let placedTilesSorted = placedTiles.sorted(by: { $0.boardPosition!.row < $1.boardPosition!.row })
                 
                 if (!game.boardManager.arePlacedTilesConsecutive(placedTilesSorted, wordOrientation: .vertical)) {
@@ -122,8 +114,6 @@ class WordValidator: ObservableObject {
                 
                 if let createdWord = game.boardManager.getWordVertical(placedTiles.first!.id) {
                     allCreatedWords.append(createdWord)
-                } else {
-                    print("Could not find vertically created word")
                 }
             }
         } else {

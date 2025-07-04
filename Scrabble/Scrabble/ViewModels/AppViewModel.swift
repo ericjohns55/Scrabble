@@ -8,13 +8,13 @@
 import Foundation
 
 enum AppPage {
-    case mainMenu, multiplayer, boardSelector, game
+    case mainMenu, singleplayer, multiplayer, stats
 }
 
 @MainActor
 class AppViewModel: ObservableObject {
     @Published var currentPage: AppPage = .mainMenu
-    @Published var boardIdentifier: BoardIdentifier = .diamond11
+    @Published var boardIdentifier: BoardIdentifier? = nil
     
     private var defaultWordSet: Set<String> = []
     
@@ -36,11 +36,11 @@ class AppViewModel: ObservableObject {
     
     func endGame(finalGameStats: GameStats) {
         // TODO: track user stats
-        print(String(describing: finalGameStats))
-        
-        print("Score: \(finalGameStats.score)")
-        print("Word Count: \(finalGameStats.words)")
-        print("Moves: \(finalGameStats.moves)")
-        print("Tiles: \(finalGameStats.tiles)")
+//        print(String(describing: finalGameStats))
+//        
+//        print("Score: \(finalGameStats.score)")
+//        print("Word Count: \(finalGameStats.words)")
+//        print("Moves: \(finalGameStats.moves)")
+//        print("Tiles: \(finalGameStats.tiles)")
     }
 }
