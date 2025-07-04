@@ -7,8 +7,20 @@
 
 import Foundation
 
-enum GameState: Decodable {
-    case pending, declined, waitingForMoves, completed, forfeitted
+enum GameState: String, Codable, CaseIterable {
+    case pending, declined, waitingForMoves, completed, forfeited
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self).lowercased()
+        
+        if let match = GameState.allCases.first(where: { $0.rawValue.lowercased() == rawValue }) {
+            self = match
+        } else {
+            print("Could not decode enum value: \(rawValue)")
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Could not decode enum value: \(rawValue)"))
+        }
+    }
 }
 
 struct CredentialsPayload: Codable {
@@ -35,7 +47,7 @@ struct GameMovePayload: Codable {
     let serializedBoard: String?
 }
 
-struct Player: Decodable {
+struct Player: Decodable, Hashable, Identifiable {
     let id: UInt64
     let uuid: UUID
     let username: String
@@ -46,10 +58,10 @@ struct Player: Decodable {
 
 struct Game: Decodable {
     let id: UInt64
-    let uuid: String
+    let uuid: UUID
     let seed: UInt64
     let createdAt: Date
-    let completedAt: Date
+    let completedAt: Date?
     let updatedAt: Date
     let boardIdentifier: BoardIdentifier
     let gameState: GameState
@@ -71,4 +83,38 @@ struct GameMove: Decodable {
     let tilesPlayed: Int
     let movesMade: Int
     let serializedBoard: String?
+}
+
+extension Game {
+    func isCompleted() -> Bool {
+        return self.gameState == .completed || self.gameState == .forfeited || self.gameState == .declined
+    }
+    
+    func isPending(player: Player) -> Bool {
+        return self.gameState == .pending && self.opposingPlayer.id == player.id
+    }
+    
+    func isCurrentPlayersTurn(player: Player) -> Bool {
+        if (self.gameState == .pending) {
+            return self.initiatingPlayer.id == player.id && self.initiatingPlayerMove == nil
+        }
+        
+        return self.gameState == .waitingForMoves
+            && ((self.initiatingPlayer.id == player.id && self.initiatingPlayerMove == nil)
+                || (self.opposingPlayer.id == player.id && self.opposingPlayerMove == nil))
+    }
+    
+    func isOtherPlayersTurn(player: Player) -> Bool {
+        if (self.gameState == .pending) {
+            return self.initiatingPlayer.id == player.id && self.initiatingPlayerMove != nil
+        }
+        
+        return self.gameState == .waitingForMoves
+            && ((self.initiatingPlayer.id == player.id && self.initiatingPlayerMove != nil && self.opposingPlayerMove == nil)
+                || (self.opposingPlayer.id == player.id && self.opposingPlayerMove != nil && self.initiatingPlayerMove == nil))
+    }
+    
+    func getOtherPlayer(currentPlayer: Player) -> Player {
+        return self.initiatingPlayer.id == currentPlayer.id ? self.opposingPlayer : self.initiatingPlayer
+    }
 }

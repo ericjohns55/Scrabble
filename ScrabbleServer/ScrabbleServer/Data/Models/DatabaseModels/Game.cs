@@ -22,7 +22,7 @@ public class Game
     public DateTime UpdatedAt { get; set; }
     
     [Column("COMPLETED_AT")]
-    public DateTime CompletedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
     
     [Column("BOARD_IDENTIFIER")]
     public BoardIdentifier BoardIdentifier { get; init; }

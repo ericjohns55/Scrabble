@@ -7,8 +7,20 @@
 
 import UIKit
 
-enum BoardIdentifier: Codable {
+enum BoardIdentifier: String, Codable, CaseIterable {
     case diamond9, diamond11, diamond13, x9, x11, x13
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self).lowercased()
+        
+        if let match = BoardIdentifier.allCases.first(where: { $0.rawValue.lowercased() == rawValue }) {
+            self = match
+        } else {
+            print("Could not decode enum value: \(rawValue)")
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Could not decode enum value: \(rawValue)"))
+        }
+    }
     
     static func getBoardSize(_ identifier: BoardIdentifier) -> Int {
         switch identifier {

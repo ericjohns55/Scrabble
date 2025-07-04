@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ScrabbleServer;
 using ScrabbleServer.Contexts;
+using ScrabbleServer.Data.Web.Serializers;
 using ScrabbleServer.Services;
 using ScrabbleServer.Utilities;
 
@@ -21,6 +22,7 @@ services.AddHealthChecks();
 services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    options.JsonSerializerOptions.Converters.Add(new DateTimeConverter());
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 });
 

@@ -59,7 +59,7 @@ struct GameView: View {
         let boardState = BoardState()
         self._boardState = StateObject(wrappedValue: boardState)
         
-        self.gameViewModel = GameViewModel(boardIdentifier: appViewModel.boardIdentifier, boardState: boardState, wordSet: appViewModel.getWordSet())
+        self.gameViewModel = GameViewModel(boardIdentifier: appViewModel.boardIdentifier, boardState: boardState, wordSet: appViewModel.getWordSet(), seed: nil)
     }
     
     var body: some View {

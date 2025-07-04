@@ -118,8 +118,8 @@ class ScrabbleClient {
         return serverResponse
     }
     
-    public func declineGame(gameId: String) async -> ServerResponse<Game?> {
-        let route = "games/\(gameId)/decline"
+    public func declineGame(gameId: UUID) async -> ServerResponse<Game?> {
+        let route = "games/\(gameId.uuidString)/decline"
         
         let serverResponse: ServerResponse<Game?> = await executeWithServerResponse(
             request: {
@@ -130,8 +130,8 @@ class ScrabbleClient {
         return serverResponse
     }
     
-    public func acceptGame(gameId: String) async -> ServerResponse<Game?> {
-        let route = "games/\(gameId)/accept"
+    public func acceptGame(gameId: UUID) async -> ServerResponse<Game?> {
+        let route = "games/\(gameId.uuidString)/accept"
         
         let serverResponse: ServerResponse<Game?> = await executeWithServerResponse(
             request: {
@@ -142,8 +142,8 @@ class ScrabbleClient {
         return serverResponse
     }
     
-    public func forfeitGame(gameId: String) async -> ServerResponse<Game?> {
-        let route = "games/\(gameId)/forfeit"
+    public func forfeitGame(gameId: UUID) async -> ServerResponse<Game?> {
+        let route = "games/\(gameId.uuidString)/forfeit"
         
         let serverResponse: ServerResponse<Game?> = await executeWithServerResponse(
             request: {

@@ -29,6 +29,12 @@ struct ActionSheetOptions {
     var buttons: [ActionSheet.Button] = [.cancel()]
 }
 
+struct AlertOptions {
+    var title: String = ""
+    var message: String = ""
+    var buttonText: String = "Dismiss"
+}
+
 @MainActor
 class PopupManager: ObservableObject {
     @Published public var showToast: Bool = false
@@ -39,6 +45,9 @@ class PopupManager: ObservableObject {
     
     @Published public var showActionSheet: Bool = false
     @Published var actionSheetOptions = ActionSheetOptions()
+    
+    @Published public var showAlert: Bool = false
+    @Published public var alertOptions = AlertOptions()
         
     func displayToast(text: String, color: Color, alertType: AlertToast.AlertType = .regular, duration: Double = 2.0) {
         toastOptions.toastType = alertType
@@ -65,11 +74,25 @@ class PopupManager: ObservableObject {
         
         showActionSheet = true
     }
+    
+    func displayAlert(title: String, message: String, buttonText: String = "Dismiss") {
+        alertOptions.title = title
+        alertOptions.message = message
+        alertOptions.buttonText = buttonText
+        
+        showAlert = true
+    }
 }
 
 extension View {
     func withPopupManager(_ popupManager: PopupManager) -> some View {
         self
+            .alert(popupManager.alertOptions.title, isPresented: Binding(get: { popupManager.showAlert },
+                                        set: { popupManager.showAlert = $0 })) {
+                Button(popupManager.alertOptions.buttonText, role: .cancel) { }
+            } message: {
+                Text(popupManager.alertOptions.message)
+            }
             .confirmationDialog(popupManager.confirmationDialogOptions.message,
                                 isPresented: Binding(get: { popupManager.showConfirmationDialog },
                                                      set: { popupManager.showConfirmationDialog = $0 }),

@@ -67,7 +67,7 @@ class GameViewModel: ObservableObject {
     
     var seededRandomGenerator: SeededRandomGenerator
 
-    init(boardIdentifier: BoardIdentifier, boardState: BoardState, wordSet: Set<String>, seed: UInt64? = 12345) {
+    init(boardIdentifier: BoardIdentifier, boardState: BoardState, wordSet: Set<String>, seed: UInt64?) {
         self.boardManager = BoardViewModel(boardIdentifier: boardIdentifier)
         self.boardState = boardState
         self.wordSet = wordSet

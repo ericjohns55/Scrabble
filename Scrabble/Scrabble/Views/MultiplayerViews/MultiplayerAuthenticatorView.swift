@@ -20,7 +20,7 @@ enum FocusedTextField {
     case username, password, confirmPassword
 }
 
-struct MultiplayerView: View {
+struct MultiplayerAuthenticatorView: View {
     private var appViewModel: AppViewModel
     private let scrabbleClient: ScrabbleClient
     

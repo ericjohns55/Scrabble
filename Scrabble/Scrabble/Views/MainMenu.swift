@@ -24,7 +24,7 @@ struct MainMenu: View {
                 case .boardSelector:
                     BoardSelectorView(appViewModel: appViewModel)
                 case .multiplayer:
-                    MultiplayerView(appViewModel: appViewModel)
+                    MultiplayerAuthenticatorView(appViewModel: appViewModel)
                 case .game:
                     GameView(appViewModel: appViewModel)
             }

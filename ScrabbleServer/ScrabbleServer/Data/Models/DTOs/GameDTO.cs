@@ -12,7 +12,7 @@ public class GameDTO
     
     public DateTime CreatedAt { get; init; }
     
-    public DateTime CompletedAt { get; init; }
+    public DateTime? CompletedAt { get; init; }
 
     public DateTime UpdatedAt { get; init; }
 

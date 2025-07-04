@@ -35,7 +35,7 @@ class BaseWebClient {
         _refreshToken = refreshToken
         
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"
+        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
         dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
         dateFormatter.locale = Locale(identifier: "en_US_POSIX")
         
@@ -124,10 +124,15 @@ class BaseWebClient {
             let responseBody = try await httpResponse.body.collect(upTo: 1024 * 1024)
             
             if (200...299).contains(httpResponse.status.code) {
-                let responseEnvelope: ResponseEnvelope<T> = try jsonDecoder.decode(ResponseEnvelope<T>.self, from: responseBody)
-                response = responseEnvelope.data
-                
-                logSuccessfulResponse(response: httpResponse, responseObject: String(describing: T.self))
+                do {
+                    let responseEnvelope: ResponseEnvelope<T> = try jsonDecoder.decode(ResponseEnvelope<T>.self, from: responseBody)
+                    response = responseEnvelope.data
+                    
+                    logSuccessfulResponse(response: httpResponse, responseObject: String(describing: T.self))
+                } catch {
+                    print("Could not deserialize payload: \(error)")
+                    throw error
+                }
             } else {
                 let errorResponse = try jsonDecoder.decode(ErrorResponse.self, from: responseBody)
                 logFailedResponse(response: httpResponse, errorEnvelope: errorResponse)
@@ -171,10 +176,15 @@ class BaseWebClient {
             let responseBody = try await httpResponse.body.collect(upTo: 1024 * 1024)
                         
             if (200...299).contains(httpResponse.status.code) {
-                let responseEnvelope: ResponseEnvelope<T> = try jsonDecoder.decode(ResponseEnvelope<T>.self, from: responseBody)
-                response = responseEnvelope.data
-                
-                logSuccessfulResponse(response: httpResponse, responseObject: String(describing: T.self))
+                do {
+                    let responseEnvelope: ResponseEnvelope<T> = try jsonDecoder.decode(ResponseEnvelope<T>.self, from: responseBody)
+                    response = responseEnvelope.data
+                    
+                    logSuccessfulResponse(response: httpResponse, responseObject: String(describing: T.self))
+                } catch {
+                    print("Could not deserialize payload: \(error)")
+                    throw error
+                }
             } else {
                 let errorResponse = try jsonDecoder.decode(ErrorResponse.self, from: responseBody)
                 logFailedResponse(response: httpResponse, errorEnvelope: errorResponse)
