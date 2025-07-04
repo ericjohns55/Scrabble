@@ -14,6 +14,8 @@ public class DatabaseContext : DbContext
     public DbSet<Game> Games { get; init; }
     
     public DbSet<GameMove> GameMoves { get; init; }
+    
+    public DbSet<HiddenGame> HiddenGames { get; init; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -44,6 +46,17 @@ public class DatabaseContext : DbContext
             .HasForeignKey(g => g.GameId)
             .OnDelete(DeleteBehavior.Restrict);
         gameMovesBuilder.HasOne(g => g.Player)
+            .WithMany()
+            .HasForeignKey(g => g.PlayerId)
+            .OnDelete(DeleteBehavior.Restrict);
+        
+        var hiddenGamesBuilder = modelBuilder.Entity<HiddenGame>();
+        hiddenGamesBuilder.HasIndex(hg => new { hg.GameId, hg.PlayerId }).IsUnique();
+        hiddenGamesBuilder.HasOne(g => g.Game)
+            .WithMany()
+            .HasForeignKey(g => g.GameId)
+            .OnDelete(DeleteBehavior.Restrict);
+        hiddenGamesBuilder.HasOne(g => g.Player)
             .WithMany()
             .HasForeignKey(g => g.PlayerId)
             .OnDelete(DeleteBehavior.Restrict);

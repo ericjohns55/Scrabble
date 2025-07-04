@@ -36,7 +36,7 @@ struct TokensPayload: Decodable {
 struct GameCreationPayload: Codable {
     let boardIdentifier: BoardIdentifier
     let seed: UInt64
-    let opponentUuid: String
+    let opponentUuid: UUID
 }
 
 struct GameMovePayload: Codable {
@@ -86,6 +86,14 @@ struct GameMove: Decodable {
 }
 
 extension Game {
+    func getGameMove(player: Player) -> GameMove? {
+        if (player.id == self.initiatingPlayer.id) {
+            return self.initiatingPlayerMove
+        } else {
+            return self.opposingPlayerMove
+        }
+    }
+    
     func isCompleted() -> Bool {
         return self.gameState == .completed || self.gameState == .forfeited || self.gameState == .declined
     }

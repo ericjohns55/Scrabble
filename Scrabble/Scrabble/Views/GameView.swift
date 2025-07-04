@@ -41,6 +41,7 @@ class BoardState: ObservableObject {
 struct GameView: View {
     private var appViewModel: AppViewModel
     private var gameViewModel: GameViewModel
+    private var multiplayerViewModel: MultiplayerViewModel?
     
     @State private var inSummaryView = false
     @State private var boardRender: UIImage? = nil
@@ -53,32 +54,37 @@ struct GameView: View {
         PlacementStatus.getColor(for: boardState.placementState)
     }
     
-    init(appViewModel: AppViewModel) {
+    init(appViewModel: AppViewModel, multiplayerViewModel: MultiplayerViewModel?) {
         self.appViewModel = appViewModel
         
         let boardState = BoardState()
         self._boardState = StateObject(wrappedValue: boardState)
         
+        self.multiplayerViewModel = multiplayerViewModel
+                
+        let seed = self.multiplayerViewModel?.currentGame?.seed ?? nil
+        let boardIdentifier = self.multiplayerViewModel?.currentGame?.boardIdentifier ?? self.appViewModel.boardIdentifier!
+        
         self.gameViewModel = GameViewModel(
-            boardIdentifier: appViewModel.boardIdentifier!,
+            boardIdentifier: boardIdentifier,
             boardState: boardState,
             wordSet: appViewModel.getWordSet(),
-            seed: nil)
+            seed: seed)
     }
     
     var body: some View {
         VStack {
-            if (inSummaryView) {
-                SummaryGameView()
+            if (!inSummaryView) {
+                ActiveGameView(boardRender: $boardRender)
             } else {
-                ActiveGameView(active: $inSummaryView, boardRender: $boardRender)
+                SummaryGameView()
             }
         }
         .withPopupManager(popupManager)
     }
     
     @ViewBuilder
-    func ActiveGameView(active: Binding<Bool>, boardRender: Binding<UIImage?>) -> some View {
+    func ActiveGameView(boardRender: Binding<UIImage?>) -> some View {
         VStack(spacing: 8) {
             HStack {
                 Text("Moves: \(gameViewModel.gameStats.moves)")
@@ -127,7 +133,7 @@ struct GameView: View {
                     Spacer()
                 }
                 
-                wordsView()
+                WordsView()
             }
             
             BoardView(viewModel: gameViewModel, dragManager: dragManager)
@@ -150,23 +156,16 @@ struct GameView: View {
                     Button(action: {
                         popupManager.displayConfirmationDialog(message: "Are you sure you want to end the game?", confirmAction: {
                             appViewModel.endGame(finalGameStats: gameViewModel.gameStats)
-                            
+                                
                             gameViewModel.recallTiles()
                             
-                            TileView.inRenderMode = true
-                            
-                            let boardView = BoardView(viewModel: gameViewModel, dragManager: dragManager)
-                                .aspectRatio(1, contentMode: .fit)
-                                .frame(width: 640, height: 640)
-                            
-                            let renderer = ImageRenderer(content: boardView)
-                            if let image = renderer.uiImage {
-                                $boardRender.wrappedValue = image
+                            if (multiplayerViewModel == nil) {
+                                singleplayerEndGameCallback()
+                            } else {
+                                Task {
+                                    await multiplayerEndGameCallback()
+                                }
                             }
-                            
-                            TileView.inRenderMode = false
-                            
-                            active.wrappedValue = true
                         })
                     }) {
                         Text("End Game")
@@ -281,7 +280,7 @@ struct GameView: View {
     }
     
     @ViewBuilder
-    func wordsView() -> some View {
+    func WordsView() -> some View {
         let label = Text("Words: ")
             .foregroundStyle(textColor)
         
@@ -303,6 +302,43 @@ struct GameView: View {
         
         let viewParts: [Text] = [label, invalidWords, commaBetweenWords, validWords, noWordsLabel].compactMap { $0 }
         viewParts.reduce(Text(""), +)
+    }
+    
+    func singleplayerEndGameCallback() {
+        
+        TileView.inRenderMode = true
+        
+        let boardView = BoardView(viewModel: gameViewModel, dragManager: dragManager)
+            .aspectRatio(1, contentMode: .fit)
+            .frame(width: 640, height: 640)
+        
+        let renderer = ImageRenderer(content: boardView)
+        if let image = renderer.uiImage {
+            $boardRender.wrappedValue = image
+        }
+        
+        TileView.inRenderMode = false
+        
+        inSummaryView = true
+    }
+    
+    func multiplayerEndGameCallback() async {
+        if let multiplayerViewModel = multiplayerViewModel {
+            let gameMovePayload = GameMovePayload(
+                score: gameViewModel.gameStats.score,
+                wordsPlayed: gameViewModel.gameStats.words,
+                tilesPlayed: gameViewModel.gameStats.tiles,
+                movesMade: gameViewModel.gameStats.moves,
+                serializedBoard: nil)
+            
+            if (await multiplayerViewModel.submitMove(gameMovePayload: gameMovePayload)) {
+                multiplayerViewModel.inGame = false
+            } else {
+                popupManager.displayToast(text: "Failed to submit move", color: .red)
+            }
+        } else {
+            popupManager.displayToast(text: "An error has occurred", color: .red)
+        }
     }
     
     func buildInvalidWords() -> Text {

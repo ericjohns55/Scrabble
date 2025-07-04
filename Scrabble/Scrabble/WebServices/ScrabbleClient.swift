@@ -106,8 +106,8 @@ class ScrabbleClient {
         return serverResponse
     }
     
-    public func submitMove(gameId: String, gameMovePayload: GameMovePayload) async -> ServerResponse<Game?> {
-        let route = "games/\(gameId)/submit"
+    public func submitMove(gameId: UUID, gameMovePayload: GameMovePayload) async -> ServerResponse<Game?> {
+        let route = "games/\(gameId.uuidString)/submit"
         
         let serverResponse: ServerResponse<Game?> = await executeWithServerResponse(
             request: {
@@ -146,6 +146,18 @@ class ScrabbleClient {
         let route = "games/\(gameId.uuidString)/forfeit"
         
         let serverResponse: ServerResponse<Game?> = await executeWithServerResponse(
+            request: {
+                try await self.httpClient.postRequest(route: route, authToken: self.authToken, body: nil)
+            }
+        )
+        
+        return serverResponse
+    }
+    
+    public func hideGame(gameId: UUID) async -> ServerResponse<Bool> {
+        let route = "games/\(gameId.uuidString)/hide"
+        
+        let serverResponse: ServerResponse<Bool> = await executeWithServerResponse(
             request: {
                 try await self.httpClient.postRequest(route: route, authToken: self.authToken, body: nil)
             }

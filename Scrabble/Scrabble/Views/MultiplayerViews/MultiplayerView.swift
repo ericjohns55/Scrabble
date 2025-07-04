@@ -9,7 +9,7 @@ import SwiftUI
 import AlertToast
 
 enum ExtraRowButtons {
-    case decline, accept, forfeit
+    case decline, accept, forfeit, hide
 }
 
 struct AuthedMultiplayerView: View {
@@ -36,25 +36,88 @@ struct AuthedMultiplayerView: View {
     }
     
     var body: some View {
+        VStack {
+            if (multiplayerViewModel.currentGame == nil) {
+                MultiplayerHomeScreen()
+            } else {
+                if (multiplayerViewModel.inGame) {
+                    GameView(appViewModel: appViewModel, multiplayerViewModel: multiplayerViewModel)
+                } else {
+                    MultiplayerGameSummaryScreen()
+                }
+            }
+        }
+        .withPopupManager(popupManager)
+        .task {
+            await multiplayerViewModel.loadMultiplayerMenuData()
+        }
+    }
+    
+    @ViewBuilder
+    func MultiplayerHomeScreen() -> some View {
         ZStack {
             VStack {
                 Section {
                     ScrollView {
                         LazyVStack(spacing: 16) {
                             if (!multiplayerViewModel.pendingGames.isEmpty) {
-                                GameListBuilder(titleText: "Pending Games", gameList: multiplayerViewModel.pendingGames, extraButtons: [.accept, .decline])
+                                GameListBuilder(
+                                    titleText: "Pending Games",
+                                    gameList: multiplayerViewModel.pendingGames,
+                                    extraButtons: [.accept, .decline],
+                                    tapCallback: { game in
+                                        popupManager.displayToast(text: "You must accept or decline the game first", color: .red)
+                                    })
                             }
                             
                             if (!multiplayerViewModel.currentPlayersTurn.isEmpty) {
-                                GameListBuilder(titleText: "Your Turn", gameList: multiplayerViewModel.currentPlayersTurn, extraButtons: [.forfeit])
+                                GameListBuilder(
+                                    titleText: "Your Turn",
+                                    gameList: multiplayerViewModel.currentPlayersTurn,
+                                    extraButtons: [.forfeit],
+                                    tapCallback: { game in
+                                        popupManager.displayConfirmationDialog(
+                                            message: "Once you start the game you cannot exit it (this is temporary)",
+                                            displayTitle: true,
+                                            confirmAction: {
+                                                multiplayerViewModel.inGame = true
+                                                multiplayerViewModel.currentGame = game
+                                            })
+                                    })
                             }
                             
                             if (!multiplayerViewModel.otherPlayersTurn.isEmpty) {
-                                GameListBuilder(titleText: "Opponent's Turn", gameList: multiplayerViewModel.otherPlayersTurn, extraButtons: [.forfeit])
+                                GameListBuilder(
+                                    titleText: "Opponent's Turn",
+                                    gameList: multiplayerViewModel.otherPlayersTurn,
+                                    extraButtons: [.forfeit],
+                                    tapCallback: { game in
+                                        multiplayerViewModel.inGame = false
+                                        multiplayerViewModel.currentGame = game
+                                    })
                             }
                             
                             if (!multiplayerViewModel.completedGames.isEmpty) {
-                                GameListBuilder(titleText: "Completed Games", gameList: multiplayerViewModel.completedGames)
+                                GameListBuilder(
+                                    titleText: "Completed Games",
+                                    gameList: multiplayerViewModel.completedGames,
+                                    extraButtons: [.hide],
+                                    tapCallback: { game in
+                                        multiplayerViewModel.inGame = false
+                                        multiplayerViewModel.currentGame = game
+                                    })
+                            }
+                            
+                            if (multiplayerViewModel.allGamesEmpty()) {
+                                Text("No existing games found")
+                                    .foregroundStyle(.white)
+                                    .font(.title)
+                                    .bold()
+                                
+                                Text("Create a new game to get started")
+                                    .foregroundStyle(.white)
+                                    .font(.title3)
+                                    .bold()
                             }
                         }
                     }
@@ -89,14 +152,10 @@ struct AuthedMultiplayerView: View {
                     .zIndex(1)
             }
         }
-        .withPopupManager(popupManager)
-        .task {
-            await multiplayerViewModel.loadMultiplayerMenuData()
-        }
     }
     
     @ViewBuilder
-    func GameListBuilder(titleText: String, gameList: [Game], extraButtons: [ExtraRowButtons] = []) -> some View {
+    func GameListBuilder(titleText: String, gameList: [Game], extraButtons: [ExtraRowButtons] = [], tapCallback: ((Game) -> Void)? = nil) -> some View {
         VStack(spacing: 8) {
             Text(titleText)
                 .font(.title2)
@@ -105,7 +164,7 @@ struct AuthedMultiplayerView: View {
                 
             VStack(alignment: .leading) {
                 ForEach(gameList.indices, id: \.self) { index in
-                    GameRow(gameList[index], extraButtons: extraButtons)
+                    GameRow(gameList[index], extraButtons: extraButtons, tapCallback: tapCallback)
                     
                     if (index < gameList.count - 1) {
                         Divider()
@@ -117,7 +176,7 @@ struct AuthedMultiplayerView: View {
     }
     
     @ViewBuilder
-    func GameRow(_ game: Game, extraButtons: [ExtraRowButtons]) -> some View {
+    func GameRow(_ game: Game, extraButtons: [ExtraRowButtons], tapCallback: ((Game) -> Void)? = nil) -> some View {
         HStack {
             Image(String(describing: game.boardIdentifier))
                 .resizable()
@@ -179,19 +238,37 @@ struct AuthedMultiplayerView: View {
                         .foregroundStyle(.red)
                         .padding(.leading, leadingPadding)
                         .onTapGesture {
-                            Task {
-                                _ = await scrabbleClient.forfeitGame(gameId: game.uuid)
-                                await multiplayerViewModel.fetchGames()
-                            }
+                            popupManager.displayConfirmationDialog(message: "Are you sure you want to forfeit this game?", displayTitle: true, confirmAction: {
+                                Task {
+                                    _ = await scrabbleClient.forfeitGame(gameId: game.uuid)
+                                    await multiplayerViewModel.fetchGames()
+                                }
+                            })
                         }
                 }
                 
+                if (extraButtons.contains(.hide)) {
+                    Image(systemName: "trash")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: rowHeight / 2, height: rowHeight / 2)
+                        .foregroundStyle(.red)
+                        .padding(.leading, leadingPadding)
+                        .onTapGesture {
+                            popupManager.displayConfirmationDialog(message: "Are you sure you want to delete this game result? This currently cannot be undone", displayTitle: true, confirmAction: {
+                                Task {
+                                    _ = await scrabbleClient.hideGame(gameId: game.uuid)
+                                    await multiplayerViewModel.fetchGames()
+                                }
+                            })
+                        }
+                }
             }
         }
         .frame(height: rowHeight) 
         .contentShape(Rectangle())
         .onTapGesture {
-            print("TODO: Load game \(game.uuid.uuidString)")
+            tapCallback?(game)
         }
     }
     
@@ -246,5 +323,125 @@ struct AuthedMultiplayerView: View {
                 .padding(.horizontal, 4)
         }
 
+    }
+    
+    @ViewBuilder
+    func MultiplayerGameSummaryScreen() -> some View {
+        let currentGame = multiplayerViewModel.currentGame!
+        let opponent = currentGame.getOtherPlayer(currentPlayer: currentUser)
+        
+        let currentPlayersMove = currentGame.getGameMove(player: currentUser)
+        let opponentsMove = currentGame.getGameMove(player: opponent)
+        
+        let isTied = currentGame.gameTied != nil && currentGame.gameTied!
+        let currentPlayerWinStatus = isTied || currentGame.winningPlayer?.id == currentUser.id
+        let opposingPlayerWinStatus = isTied || currentGame.winningPlayer?.id == opponent.id
+        
+        VStack(spacing: 8) {
+            VStack {
+                if (currentGame.isCompleted()) {
+                    Text("Game Complete!")
+                        .foregroundStyle(.white)
+                        .font(.title)
+                        .bold()
+                        .padding(.bottom, 24)
+                    
+                    if (currentGame.gameState == .forfeited && currentGame.winningPlayer != nil) {
+                        let forfeitingPlayer = currentGame.getOtherPlayer(currentPlayer: currentGame.winningPlayer!)
+                        
+                        Text("\(forfeitingPlayer.username) forfeited!")
+                            .foregroundStyle(.white)
+                            .font(.title3)
+                            .bold()
+                        
+                    } else if (currentGame.gameState == .declined) {
+                        Text("\(opponent.username) declined the game!")
+                            .foregroundStyle(.white)
+                            .font(.title3)
+                            .bold()
+                    } else {
+                        if (isTied) {
+                            Text("Game ended in a tie!")
+                                .foregroundStyle(.white)
+                                .font(.title3)
+                                .bold()
+                        } else {
+                            Text("\(currentGame.winningPlayer!.username) won!")
+                                .foregroundStyle(.white)
+                                .font(.title3)
+                                .bold()
+                        }
+                        
+                    }
+                } else {
+                    Text("Game still in progress")
+                        .foregroundStyle(.white)
+                        .font(.title)
+                        .bold()
+                }
+            }
+            .padding(.bottom, 24)
+            
+            let emptyMoveSuffix = currentGame.isCompleted() ? "never played" : "has not played yet"
+            let colorOverride = currentGame.isCompleted() ? nil : Color.white
+                        
+            VStack {
+                if let renderedMove = currentPlayersMove {
+                    GameMoveView(gameMove: renderedMove, player: currentUser, isWinner: currentPlayerWinStatus, colorOverride: colorOverride)
+                } else {
+                    Text("You \(emptyMoveSuffix)")
+                        .foregroundStyle(.white)
+                        .font(.title3)
+                }
+            }
+            
+            VStack {
+                if let renderedMove = opponentsMove {
+                    GameMoveView(gameMove: renderedMove, player: opponent, isWinner: opposingPlayerWinStatus, colorOverride: colorOverride)
+                } else {
+                    Text("\(opponent.username) \(emptyMoveSuffix)")
+                        .foregroundStyle(.white)
+                        .font(.title3)
+                }
+            }
+            
+            Button(action: {
+                multiplayerViewModel.currentGame = nil
+            }) {
+                Text("Back")
+                    .frame(maxWidth: 200, maxHeight: MainMenu.buttonHeight)
+            }
+            .contentShape(Rectangle())
+            .border(.gray)
+            .padding(.horizontal, 4)
+            .padding(.top, 48)
+        }
+    }
+    
+    @ViewBuilder
+    func GameMoveView(gameMove: GameMove, player: Player, isWinner: Bool, gameInProgress: Bool = true, colorOverride: Color? = nil) -> some View {
+        let textColor = colorOverride ?? (isWinner ? Color.green : Color.red)
+        
+        Text(player.username)
+            .foregroundStyle(textColor)
+            .font(.title2)
+            .underline()
+        
+        Text("Words Played: \(gameMove.wordsPlayed)")
+            .foregroundStyle(textColor)
+            .font(.title2)
+        
+        Text("Final Score: \(gameMove.score)")
+            .foregroundStyle(textColor)
+            .font(.title2)
+        
+        Text("Tiles Played: \(gameMove.tilesPlayed)")
+            .foregroundStyle(textColor)
+            .font(.title2)
+        
+        Text("Moves Made: \(gameMove.movesMade)")
+            .foregroundStyle(textColor)
+            .font(.title2)
+            .padding(.bottom, 24)
     }
 }

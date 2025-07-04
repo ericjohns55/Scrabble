@@ -12,13 +12,16 @@ class MultiplayerViewModel: ObservableObject {
     private var scrabbleClient: ScrabbleClient?
     private var currentPlayer: Player
     
+    @Published var allPlayers: [Player] = []
+    
     private var allGames: [Game] = []
     @Published var pendingGames: [Game] = []
     @Published var currentPlayersTurn: [Game] = []
     @Published var otherPlayersTurn: [Game] = []
     @Published var completedGames: [Game] = []
     
-    @Published var allPlayers: [Player] = []
+    @Published var currentGame: Game? = nil
+    @Published var inGame: Bool = false
     
     init() {
         self.scrabbleClient = nil
@@ -62,14 +65,28 @@ class MultiplayerViewModel: ObservableObject {
     
     func createGame(opponentUuid: UUID, board: BoardIdentifier) async -> Bool {
         let generatedSeed: UInt64 = UInt64.random(in: 0..<UInt64.max)
-        let newGamePayload = GameCreationPayload(boardIdentifier: board, seed: generatedSeed, opponentUuid: opponentUuid.uuidString)
+        let newGamePayload = GameCreationPayload(boardIdentifier: board, seed: generatedSeed, opponentUuid: opponentUuid)
         
         let serverResponse = await scrabbleClient?.createGame(creationPayload: newGamePayload)
         
         return serverResponse?.data != nil
     }
     
-    func getStatusTextForGame(game: Game) -> String {
+    func submitMove(gameMovePayload: GameMovePayload) async -> Bool {
+        let serverResponse = await scrabbleClient?.submitMove(gameId: currentGame!.uuid, gameMovePayload: gameMovePayload)
+        
+        if let responseData = serverResponse?.data {
+            currentGame = responseData
+        }
+        
+        return serverResponse?.data != nil
+    }
+    
+    func allGamesEmpty() -> Bool {
+        return completedGames.isEmpty && pendingGames.isEmpty && currentPlayersTurn.isEmpty && otherPlayersTurn.isEmpty
+    }
+    
+    func getStatusTextForGame(game: Game, replaceNames: Bool = true) -> String {
         let comparisonLambda = { $0.uuid == game.uuid } as (Game) -> Bool
         var gameStateMessage = "State unknown"
         
@@ -94,12 +111,14 @@ class MultiplayerViewModel: ObservableObject {
             }
         }
         
-        let otherPlayerName = game.getOtherPlayer(currentPlayer: currentPlayer).username
-        
-        if (gameStateMessage.contains(currentPlayer.username)) {
-            gameStateMessage = gameStateMessage.replacing(currentPlayer.username, with: "You")
-        } else if (gameStateMessage.contains(otherPlayerName)) {
-            gameStateMessage = gameStateMessage.replacing(otherPlayerName, with: "They")
+        if (replaceNames) {
+            let otherPlayerName = game.getOtherPlayer(currentPlayer: currentPlayer).username
+            
+            if (gameStateMessage.contains(currentPlayer.username)) {
+                gameStateMessage = gameStateMessage.replacing(currentPlayer.username, with: "You")
+            } else if (gameStateMessage.contains(otherPlayerName)) {
+                gameStateMessage = gameStateMessage.replacing(otherPlayerName, with: "They")
+            }
         }
         
         return gameStateMessage

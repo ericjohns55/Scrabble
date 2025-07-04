@@ -82,4 +82,12 @@ public class GameController : ScrabbleBaseController
     {
         return Ok(await ExecuteToScrabbleResponseAsync(() => _gameService.ForfeitGame(CurrentPlayer, gameId)));
     }
+
+    [HttpPost]
+    [Route("{gameId}/hide")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScrabbleWebResponse<bool>))]
+    public async Task<IActionResult> HideGame(Guid gameId)
+    {
+        return Ok(await ExecuteToScrabbleResponseAsync(() => _gameService.HideGame(CurrentPlayer, gameId)));
+    }
 }

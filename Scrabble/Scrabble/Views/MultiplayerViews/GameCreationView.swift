@@ -67,7 +67,7 @@ struct GameCreationView: View {
             }
             
             Button(action: {
-                Task {
+                Task { 
                     if (await multiplayerViewModel.createGame(opponentUuid: selectedPlayerUuid!, board: selectedBoard)) {
                         isPresented = false
                         

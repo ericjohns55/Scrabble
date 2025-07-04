@@ -18,7 +18,7 @@ struct SingleplayerView: View {
         if (appViewModel.boardIdentifier == nil) {
             BoardSelectorView()
         } else {
-            GameView(appViewModel: appViewModel)
+            GameView(appViewModel: appViewModel, multiplayerViewModel: nil)
         }
     }
     

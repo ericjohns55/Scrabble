@@ -29,14 +29,16 @@ public class GameService
             .Include(g => g.OpposingPlayer)
             .Include(g => g.InitiatingPlayerMove)
             .Include(g => g.OpposingPlayerMove)
-            .Where(g => g.InitiatingPlayerId == currentPlayer.Id || g.OpposingPlayerId == currentPlayer.Id);
+            .Where(g => g.InitiatingPlayerId == currentPlayer.Id || g.OpposingPlayerId == currentPlayer.Id)
+            .Where(g => !_scrabbleContext.DatabaseContext.HiddenGames
+                .Any(hg => hg.GameId == g.Id && hg.PlayerId == currentPlayer.Id));
 
         if (gameState.HasValue)
         {
             gamesQuery = gamesQuery.Where(g => g.GameState == gameState.Value);
         }
 
-        gamesQuery = gamesQuery.OrderByDescending(g => g.CreatedAt);
+        gamesQuery = gamesQuery.OrderByDescending(g => g.UpdatedAt);
         
         return await gamesQuery.Select(g => g.ToDTO()).ToListAsync();
     }
@@ -171,6 +173,28 @@ public class GameService
         await _scrabbleContext.DatabaseContext.SaveChangesAsync();
         
         return (await GetGame(gameId)).ToDTO();
+    }
+
+    public async Task<bool> HideGame(Player hidingPlayer, Guid gameId)
+    {
+        var game = await GetGame(gameId);
+
+        if (_scrabbleContext.DatabaseContext.HiddenGames.Any(hg =>
+                hg.PlayerId == hidingPlayer.Id && hg.GameId == game.Id))
+        {
+            throw new GameException("This game is already hidden");
+        }
+
+        var hiddenGame = new HiddenGame()
+        {
+            GameId = game.Id,
+            PlayerId = hidingPlayer.Id
+        };
+        
+        _scrabbleContext.DatabaseContext.HiddenGames.Add(hiddenGame);
+        await _scrabbleContext.DatabaseContext.SaveChangesAsync();
+
+        return true;
     }
 
     public async Task<GameDTO> UpdateGame(Guid gameId, Player currentPlayer, GameMovePayload gameMovePayload)
